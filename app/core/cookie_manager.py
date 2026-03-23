@@ -121,7 +121,7 @@ class CookieManager:
 
         try:
             logger.info(f"【{cookie_id}】正在导入XianyuLive...")
-            from app.core.XianyuAutoAsync import XianyuLive  # 延迟导入，避免循环
+            from app.core.xianyu_live import XianyuLive  # 延迟导入，避免循环
             logger.info(f"【{cookie_id}】XianyuLive导入成功")
 
             logger.info(f"【{cookie_id}】开始创建XianyuLive实例...")

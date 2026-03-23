@@ -19,3 +19,7 @@ if app_dir not in sys.path:
     sys.path.insert(0, app_dir)
 
 from app.core import *
+from app.core import cookie_manager
+from app.core import xianyu_live
+
+__all__ = ['cookie_manager', 'xianyu_live']

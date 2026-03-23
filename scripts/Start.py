@@ -43,7 +43,7 @@ def _start_api_server():
         port = parsed.port or 8080
 
     logger.info(f"启动Web服务器: http://{host}:{port}")
-    uvicorn.run("reply_server:app", host=host, port=port, log_level="info")
+    uvicorn.run("app.api:app", host=host, port=port, log_level="info")
 
 
 def load_keywords_file(path: str):
@@ -72,10 +72,10 @@ def load_keywords_file(path: str):
 def _setup_keyword_matcher_callbacks():
     """设置关键词匹配器回调函数，返回是否成功"""
     from db_manager import db_manager
-    from src.keyword_matcher import keyword_matcher
+    from app.core.keyword_matcher import keyword_matcher
 
     try:
-        from src.rule_engine import rule_engine
+        from app.core.rule_engine import rule_engine
         logger.info("规则引擎初始化完成")
     except ImportError as e:
         logger.warning(f"规则引擎导入失败: {e}")
@@ -93,7 +93,7 @@ def _setup_keyword_matcher_callbacks():
 def _init_keyword_matcher():
     """初始化关键词匹配器"""
     try:
-        from src.keyword_matcher import keyword_matcher
+        from app.core.keyword_matcher import keyword_matcher
         _setup_keyword_matcher_callbacks()
 
         all_keywords = db_manager.get_all_keywords_with_type()
@@ -170,8 +170,8 @@ async def main():
     loop = asyncio.get_running_loop()
 
     print("创建 CookieManager...")
-    from src import cookie_manager as cm
-    from src.cookie_manager import CookieManager
+    from app.core import cookie_manager as cm
+    from app.core.cookie_manager import CookieManager
     cm.manager = CookieManager(loop)
     manager = cm.manager
     print("CookieManager 创建完成")
