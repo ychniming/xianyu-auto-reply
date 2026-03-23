@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Token 测试</title>
+</head>
+<body>
+    <h1>Token 测试页面</h1>
+    <div id="result"></div>
+    
+    <script>
+        const result = document.getElementById('result');
+        
+        // 检查 localStorage 中的 token
+        const token = localStorage.getItem('auth_token');
+        
+        let html = '<h2>检查结果:</h2>';
+        html += `<p>localStorage 中的 token: ${token ? token.substring(0, 20) + '...' : 'null'}</p>`;
+        html += `<p>Token 长度：${token ? token.length : 0}</p>`;
+        
+        // 检查数据库中是否有这个 token
+        if (token) {
+            html += '<p>正在验证 token...</p>';
+            
+            fetch('/notification-channels', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(res => {
+                html += `<p>API 响应状态：${res.status}</p>`;
+                if (res.status === 200) {
+                    html += '<p style="color: green;">✅ Token 有效！</p>';
+                } else if (res.status === 401) {
+                    html += '<p style="color: red;">❌ Token 无效或未授权</p>';
+                }
+                result.innerHTML = html;
+            })
+            .catch(err => {
+                html += `<p style="color: red;">错误：${err.message}</p>`;
+                result.innerHTML = html;
+            });
+        } else {
+            html += '<p style="color: red;">❌ 未找到 token，请先登录</p>';
+            result.innerHTML = html;
+        }
+    </script>
+</body>
+</html>

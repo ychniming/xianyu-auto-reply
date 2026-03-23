@@ -1,0 +1,2392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>闲鱼自动回复管理系统</title>
+  <link rel="stylesheet" href="/static/lib/bootstrap/bootstrap.min.css">
+  <link rel="stylesheet" href="/static/lib/bootstrap-icons/bootstrap-icons.css">
+  
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+  <!-- 移动端菜单切换按钮 -->
+  <button class="mobile-toggle" onclick="toggleSidebar()">
+    <i class="bi bi-list"></i>
+  </button>
+
+  <!-- 侧边栏 -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <a href="#" class="sidebar-brand">
+        <i class="bi bi-chat-dots-fill me-2"></i>
+        闲鱼管理系统
+      </a>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item">
+        <a href="#" class="nav-link active" onclick="showSection('dashboard')">
+          <i class="bi bi-speedometer2"></i>
+          仪表盘
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="#" class="nav-link" onclick="showSection('accounts')">
+          <i class="bi bi-person-circle"></i>
+          账号管理
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="#" class="nav-link" onclick="showSection('items')">
+          <i class="bi bi-box-seam"></i>
+          商品管理
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="#" class="nav-link" onclick="showSection('auto-reply')">
+          <i class="bi bi-chat-left-text"></i>
+          自动回复
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="#" class="nav-link" onclick="showSection('cards')">
+          <i class="bi bi-credit-card"></i>
+          卡券管理
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="#" class="nav-link" onclick="showSection('auto-delivery')">
+          <i class="bi bi-truck"></i>
+          自动发货
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="#" class="nav-link" onclick="showSection('notification-channels')">
+          <i class="bi bi-bell"></i>
+          通知渠道
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="#" class="nav-link" onclick="showSection('message-notifications')">
+          <i class="bi bi-chat-dots"></i>
+          消息通知
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="/item_search.html" class="nav-link" target="_blank">
+          <i class="bi bi-search"></i>
+          商品搜索
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="#" class="nav-link" onclick="showSection('system-settings')">
+          <i class="bi bi-gear"></i>
+          系统设置
+        </a>
+      </div>
+
+      <!-- 管理员专用菜单 -->
+      <div id="adminMenuSection" style="display: none;">
+        <div class="nav-divider mt-3 mb-2">
+          <small class="text-white-50">管理员功能</small>
+        </div>
+        <div class="nav-item">
+          <a href="/user_management.html" class="nav-link" target="_blank">
+            <i class="bi bi-people"></i>
+            用户管理
+          </a>
+        </div>
+        <div class="nav-item">
+          <a href="/log_management.html" class="nav-link" target="_blank">
+            <i class="bi bi-file-text-fill"></i>
+            系统日志
+          </a>
+        </div>
+        <div class="nav-item">
+          <a href="/data_management.html" class="nav-link" target="_blank">
+            <i class="bi bi-database"></i>
+            数据管理
+          </a>
+        </div>
+      </div>
+
+      <div class="nav-item">
+        <a href="#" class="nav-link" onclick="showSection('about')">
+          <i class="bi bi-info-circle"></i>
+          关于
+        </a>
+      </div>
+
+      <!-- 底部分隔符 -->
+      <div class="nav-divider mt-3 mb-2">
+        <small class="text-white-50">系统操作</small>
+      </div>
+      <div class="nav-item">
+        <a href="#" class="nav-link" onclick="logout()">
+          <i class="bi bi-box-arrow-right"></i>
+          登出
+        </a>
+      </div>
+    </nav>
+  </div>
+
+  <!-- 主内容区域 -->
+  <div class="main-content">
+    <!-- 仪表盘内容 -->
+    <div id="dashboard-section" class="content-section active">
+      <div class="content-header">
+        <h2 class="mb-0">
+          <i class="bi bi-speedometer2 me-2"></i>
+          仪表盘
+        </h2>
+        <p class="text-muted mb-0">系统概览和统计信息</p>
+      </div>
+      <div class="content-body">
+        <div class="dashboard-stats">
+          <div class="stat-card">
+            <div class="stat-icon primary">
+              <i class="bi bi-person-circle"></i>
+            </div>
+            <div class="stat-number" id="totalAccounts">0</div>
+            <div class="stat-label">总账号数</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon success">
+              <i class="bi bi-chat-left-text"></i>
+            </div>
+            <div class="stat-number" id="totalKeywords">0</div>
+            <div class="stat-label">总关键词数</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon warning">
+              <i class="bi bi-activity"></i>
+            </div>
+            <div class="stat-number" id="activeAccounts">0</div>
+            <div class="stat-label">启用账号数</div>
+          </div>
+        </div>
+
+        <!-- 账号详情列表 -->
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <i class="bi bi-list-ul me-2"></i>
+              账号详情
+            </h5>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead>
+                  <tr>
+                    <th>账号ID</th>
+                    <th>关键词数量</th>
+                    <th>状态</th>
+                    <th>最后更新</th>
+                  </tr>
+                </thead>
+                <tbody id="dashboardAccountsList">
+                  <!-- 动态生成 -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 账号管理内容 -->
+    <div id="accounts-section" class="content-section">
+      <div class="content-header">
+        <h2 class="mb-0">
+          <i class="bi bi-person-circle me-2"></i>
+          账号管理
+        </h2>
+        <p class="text-muted mb-0">管理闲鱼账号Cookie信息</p>
+      </div>
+      <div class="content-body">
+        <!-- 添加Cookie卡片 -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <span><i class="bi bi-plus-circle me-2"></i>添加新账号</span>
+          </div>
+          <div class="card-body">
+            <!-- 添加方式选择 -->
+            <div class="row mb-4">
+              <div class="col-12">
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                  <button type="button" class="btn btn-success btn-lg me-md-2 flex-fill qr-login-btn" onclick="showQRCodeLogin()" style="max-width: 300px;">
+                    <i class="bi bi-qr-code me-2"></i>
+                    <span class="fw-bold">扫码登录</span>
+                    <br>
+                    <small class="opacity-75">推荐方式，安全便捷</small>
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary btn-lg flex-fill manual-input-btn" onclick="toggleManualInput()" style="max-width: 300px;">
+                    <i class="bi bi-keyboard me-2"></i>
+                    <span class="fw-bold">手动输入</span>
+                    <br>
+                    <small class="opacity-75">输入Cookie信息</small>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 手动输入表单（默认隐藏） -->
+            <div id="manualInputForm" style="display: none;">
+              <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>提示：</strong>推荐使用扫码登录，更加安全便捷。如需手动输入，请确保Cookie信息的准确性。
+              </div>
+              <form id="addForm" class="row g-3">
+                <div class="col-md-3">
+                  <label for="cookieId" class="form-label">账号ID</label>
+                  <input type="text" class="form-control" id="cookieId" placeholder="唯一标识" required>
+                </div>
+                <div class="col-md-9">
+                  <label for="cookieValue" class="form-label">Cookie值</label>
+                  <input type="text" class="form-control" id="cookieValue" placeholder="完整Cookie字符串" required>
+                </div>
+                <div class="col-12">
+                  <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-plus-lg me-1"></i>添加账号
+                  </button>
+                  <button type="button" class="btn btn-secondary ms-2" onclick="toggleManualInput()">
+                    <i class="bi bi-x-circle me-1"></i>取消
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cookie列表卡片 -->
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-list-ul me-2"></i>账号列表</span>
+            <div class="btn-group">
+              <button class="btn btn-sm btn-outline-success" onclick="openDefaultReplyManager()">
+                <i class="bi bi-chat-text me-1"></i>默认回复管理
+              </button>
+              <button class="btn btn-sm btn-outline-primary" onclick="loadCookies()">
+                <i class="bi bi-arrow-clockwise me-1"></i>刷新
+              </button>
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover" id="cookieTable">
+                <thead>
+                  <tr>
+                    <th style="width: 10%">账号ID</th>
+                    <th style="width: 18%">Cookie值</th>
+                    <th style="width: 8%">关键词</th>
+                    <th style="width: 8%">状态</th>
+                    <th style="width: 9%">默认回复</th>
+                    <th style="width: 9%">AI回复</th>
+                    <th style="width: 10%">自动确认发货</th>
+                    <th style="width: 28%">操作</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 商品管理内容 -->
+    <div id="items-section" class="content-section">
+      <div class="content-header">
+        <h2 class="mb-0">
+          <i class="bi bi-box-seam me-2"></i>
+          商品管理
+        </h2>
+        <p class="text-muted mb-0">管理各账号的商品信息</p>
+      </div>
+
+      <div class="content-body">
+        <!-- Cookie筛选 -->
+        <div class="card mb-4">
+          <div class="card-body">
+            <div class="row align-items-end">
+              <div class="col-md-6">
+                <label for="itemCookieFilter" class="form-label">筛选账号</label>
+                <select class="form-select" id="itemCookieFilter" onchange="loadItemsByCookie()">
+                  <option value="">所有账号</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <div class="d-flex justify-content-end align-items-end gap-2">
+                  <!-- 页码输入 -->
+                  <div class="d-flex align-items-center gap-2">
+                    <label for="pageNumber" class="form-label mb-0 text-nowrap">页码:</label>
+                    <input type="number" class="form-control" id="pageNumber" placeholder="页码" min="1" value="1" style="width: 80px;">
+                  </div>
+                  <div class="d-flex gap-2">
+                    <button class="btn btn-success" onclick="getAllItemsFromAccount()">
+                      <i class="bi bi-download me-1"></i>获取指定页
+                    </button>
+                    <button class="btn btn-warning" onclick="getAllItemsFromAccountAll()">
+                      <i class="bi bi-collection me-1"></i>获取所有页
+                    </button>
+                    <button class="btn btn-primary" onclick="refreshItems()">
+                      <i class="bi bi-arrow-clockwise me-1"></i>刷新
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 商品列表 -->
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">商品列表(自动发货根据商品标题和商品详情匹配关键字)</h5>
+            <button class="btn btn-sm btn-outline-danger" onclick="batchDeleteItems()" id="batchDeleteBtn" disabled>
+              <i class="bi bi-trash"></i> 批量删除
+            </button>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th style="width: 5%">
+                      <input type="checkbox" id="selectAllItems" onchange="toggleSelectAll(this)">
+                    </th>
+                    <th style="width: 12%">账号ID</th>
+                    <th style="width: 12%">商品ID</th>
+                    <th style="width: 18%">商品标题</th>
+                    <th style="width: 20%">商品详情</th>
+                    <th style="width: 8%">多规格</th>
+                    <th style="width: 10%">更新时间</th>
+                    <th style="width: 15%">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="itemsTableBody">
+                  <tr>
+                    <td colspan="7" class="text-center text-muted">加载中...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 自动回复内容 -->
+    <div id="auto-reply-section" class="content-section">
+      <div class="content-header">
+        <h2 class="mb-0">
+          <i class="bi bi-chat-left-text me-2"></i>
+          自动回复
+        </h2>
+        <p class="text-muted mb-0">设置账号的关键词自动回复</p>
+      </div>
+      <div class="content-body">
+        <!-- 现代化账号选择器 -->
+        <div class="account-selector">
+          <div class="selector-header">
+            <div class="selector-icon">
+              <i class="bi bi-person-circle"></i>
+            </div>
+            <div>
+              <h3 class="selector-title">选择账号</h3>
+              <p class="selector-subtitle">选择要配置自动回复的闲鱼账号</p>
+            </div>
+          </div>
+          <div class="row g-3 align-items-end">
+            <div class="col-md-8">
+              <div class="account-select-wrapper">
+                <select class="account-select" id="accountSelect" onchange="loadAccountKeywords()">
+                  <option value="">🔍 请选择一个账号开始配置...</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <button class="btn btn-primary w-100 d-flex align-items-center justify-content-center" onclick="refreshAccountList()" style="padding: 1rem 1.25rem; height: auto;">
+                <i class="bi bi-arrow-clockwise me-2"></i>
+                <span>刷新列表</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 现代化关键词管理容器 -->
+        <div class="keyword-container" id="keywordManagement" style="display: none;">
+          <div class="keyword-header">
+            <h3>
+              <i class="bi bi-chat-dots me-2"></i>
+              关键词管理
+            </h3>
+            <div class="d-flex align-items-center gap-2">
+              <div class="account-badge" id="currentAccountBadge">
+                <!-- 动态显示当前账号 -->
+              </div>
+              <div class="btn-group" role="group">
+                <button class="btn btn-outline-success btn-sm" onclick="exportKeywords()" title="导出关键词">
+                  <i class="bi bi-download"></i> 导出
+                </button>
+                <button class="btn btn-outline-primary btn-sm" onclick="showImportModal()" title="导入关键词">
+                  <i class="bi bi-upload"></i> 导入
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 添加关键词区域 -->
+          <div class="keyword-input-area">
+            <div class="keyword-input-group">
+              <div class="input-field">
+                <label>关键词</label>
+                <input type="text" id="newKeyword" placeholder="例如：你好">
+              </div>
+              <div class="input-field">
+                <label>自动回复内容</label>
+                <input type="text" id="newReply" placeholder="例如：您好，欢迎咨询！有什么可以帮助您的吗？">
+              </div>
+              <div class="input-field">
+                <label>商品ID（可选）</label>
+                <select id="newItemIdSelect" class="form-select">
+                  <option value="">选择商品或留空表示通用关键词</option>
+                </select>
+              </div>
+              <div class="input-field">
+                <label>匹配类型</label>
+                <select id="newMatchType" class="form-select" onchange="toggleMultiReplyField()">
+                  <option value="contains">包含匹配</option>
+                  <option value="exact">精确匹配</option>
+                  <option value="prefix">前缀匹配</option>
+                  <option value="suffix">后缀匹配</option>
+                  <option value="regex">正则表达式</option>
+                  <option value="fuzzy">模糊匹配</option>
+                </select>
+              </div>
+              <div class="input-field">
+                <label>优先级（0-100）</label>
+                <input type="number" id="newPriority" placeholder="默认50" min="0" max="100" value="50">
+              </div>
+              <div class="input-field">
+                <label>回复模式</label>
+                <select id="newReplyMode" class="form-select" onchange="toggleMultiReplyField()">
+                  <option value="single">单条回复</option>
+                  <option value="random">随机回复</option>
+                  <option value="sequence">顺序回复</option>
+                </select>
+              </div>
+              <div class="input-field" id="multiReplyField" style="display: none;">
+                <label>多回复配置（每行一条）</label>
+                <textarea id="newMultiReplies" class="form-control" rows="4" placeholder="每行输入一条回复内容&#10;例如：&#10;您好，欢迎咨询！&#10;有什么可以帮助您的吗？&#10;请稍等，马上为您解答"></textarea>
+              </div>
+              
+              <!-- 高级条件设置面板 -->
+              <div class="advanced-conditions-panel">
+                <div class="advanced-conditions-header" onclick="toggleAdvancedConditions()">
+                  <div class="header-left">
+                    <i class="bi bi-sliders"></i>
+                    <span>高级条件设置</span>
+                  </div>
+                  <i class="bi bi-chevron-down toggle-icon" id="advancedConditionsIcon"></i>
+                </div>
+                <div class="advanced-conditions-body" id="advancedConditionsBody" style="display: none;">
+                  <!-- 时间范围条件 -->
+                  <div class="condition-group">
+                    <label class="condition-label">
+                      <i class="bi bi-clock"></i> 时间范围
+                    </label>
+                    <div class="time-range-inputs">
+                      <input type="number" id="timeStartHour" class="form-control" min="0" max="23" placeholder="开始小时(0-23)">
+                      <span class="time-separator">-</span>
+                      <input type="number" id="timeEndHour" class="form-control" min="0" max="23" placeholder="结束小时(0-23)">
+                      <small class="form-text text-muted">留空表示不限制时间</small>
+                    </div>
+                  </div>
+                  
+                  <!-- 排除关键词条件 -->
+                  <div class="condition-group">
+                    <label class="condition-label">
+                      <i class="bi bi-x-circle"></i> 排除关键词
+                    </label>
+                    <input type="text" id="excludeKeywords" class="form-control" placeholder="多个关键词用逗号分隔，例如：已购买,不想要,不需要">
+                    <small class="form-text text-muted">当消息包含这些关键词时，此规则不触发</small>
+                  </div>
+                  
+                  <!-- 触发次数限制 -->
+                  <div class="condition-group">
+                    <label class="condition-label">
+                      <i class="bi bi-hash"></i> 触发次数限制
+                    </label>
+                    <div class="trigger-limit-input">
+                      <input type="number" id="maxTriggerCount" class="form-control" min="0" placeholder="每个用户最大触发次数">
+                      <small class="form-text text-muted">0表示不限制</small>
+                    </div>
+                  </div>
+                  
+                  <!-- 用户类型条件 -->
+                  <div class="condition-group">
+                    <label class="condition-label">
+                      <i class="bi bi-people"></i> 用户类型
+                    </label>
+                    <select id="userType" class="form-select">
+                      <option value="all">所有用户</option>
+                      <option value="new">仅新用户</option>
+                      <option value="old">仅老用户</option>
+                    </select>
+                    <small class="form-text text-muted">新用户指首次咨询的用户</small>
+                  </div>
+                </div>
+              </div>
+              
+              <button class="add-btn" onclick="addKeyword()">
+                <i class="bi bi-plus-lg"></i>
+                添加文本关键词
+              </button>
+              <button class="add-btn btn-image" onclick="showAddImageKeywordModal()">
+                <i class="bi bi-image"></i>
+                添加图片关键词
+              </button>
+            </div>
+            <div class="mt-3">
+              <small class="text-muted">
+                <i class="bi bi-lightbulb me-1"></i>
+                <strong>支持变量：</strong>
+                <code>{send_user_name}</code> 用户昵称，
+                <code>{send_user_id}</code> 用户ID，
+                <code>{send_message}</code> 用户消息
+              </small>
+            </div>
+            <div class="mt-2">
+              <small class="text-muted">
+                <i class="bi bi-info-circle me-1"></i>
+                <strong>匹配类型说明：</strong>
+                包含匹配 - 关键词出现在消息中即可；
+                精确匹配 - 消息与关键词完全相同；
+                前缀匹配 - 消息以关键词开头；
+                后缀匹配 - 消息以关键词结尾；
+                正则表达式 - 使用正则匹配；
+                模糊匹配 - 智能模糊匹配
+              </small>
+            </div>
+          </div>
+
+          <!-- 关键词列表 -->
+          <div class="keywords-list" id="keywordsList">
+            <!-- 动态生成的关键词列表 -->
+          </div>
+
+          <!-- 快速测试工具 -->
+          <div class="card mt-4 border-primary">
+            <div class="card-header bg-primary text-white">
+              <h5 class="mb-0"><i class="bi bi-play-circle me-2"></i>快速测试</h5>
+            </div>
+            <div class="card-body">
+              <p class="text-muted mb-3">配置完关键词后，使用此工具测试匹配是否正常工作</p>
+
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label">测试消息</label>
+                  <input type="text" class="form-control" id="testMessage"
+                         placeholder="输入要测试的消息内容，如：你好，价格多少"
+                         onkeypress="if(event.key==='Enter') testKeywordMatch()">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">商品ID（可选）</label>
+                  <input type="text" class="form-control" id="testItemId"
+                         placeholder="留空表示通用关键词">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                  <button class="btn btn-primary w-100" onclick="testKeywordMatch()">
+                    <i class="bi bi-search me-1"></i>测试
+                  </button>
+                </div>
+              </div>
+
+              <!-- 测试结果 -->
+              <div id="testResult" class="mt-3" style="display: none;">
+                <div class="alert" role="alert" id="testResultAlert">
+                  <h6 id="testResultTitle"></h6>
+                  <hr>
+                  <p class="mb-1" id="testResultKeyword"></p>
+                  <p class="mb-1" id="testResultMatchType"></p>
+                  <p class="mb-1" id="testResultItemId"></p>
+                  <p class="mb-1" id="testResultPosition"></p>
+                  <p class="mb-1" id="testResultReplyMode"></p>
+                  <p class="mb-1" id="testResultReplyIndex"></p>
+                  <div id="testResultReply" class="mt-2 p-2 bg-light rounded"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 卡券管理内容 -->
+    <div id="cards-section" class="content-section">
+      <div class="content-header">
+        <h2 class="mb-0">
+          <i class="bi bi-credit-card me-2"></i>
+          卡券管理
+        </h2>
+        <p class="text-muted mb-0">管理虚拟商品的卡券数据，支持API、固定文字和批量数据</p>
+      </div>
+      <div class="content-body">
+        <!-- 卡券列表 -->
+        <div class="row">
+          <div class="col-md-8">
+            <div class="card">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">卡券列表</h5>
+                <button class="btn btn-primary btn-sm" onclick="showAddCardModal()">
+                  <i class="bi bi-plus-lg me-1"></i>添加卡券
+                </button>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-hover">
+                    <thead>
+                      <tr>
+                        <th>卡券名称</th>
+                        <th>类型</th>
+                        <th>规格信息</th>
+                        <th>数据量</th>
+                        <th>延时时间</th>
+                        <th>状态</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                      </tr>
+                    </thead>
+                    <tbody id="cardsTableBody">
+                      <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">
+                          <i class="bi bi-credit-card fs-1 d-block mb-3"></i>
+                          <h5>暂无卡券数据</h5>
+                          <p class="mb-0">点击"添加卡券"开始创建您的第一个卡券</p>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card">
+              <div class="card-header">
+                <h5 class="mb-0">统计信息</h5>
+              </div>
+              <div class="card-body">
+                <div class="stat-item mb-3">
+                  <div class="d-flex justify-content-between">
+                    <span>总卡券数</span>
+                    <span class="badge bg-primary" id="totalCards">0</span>
+                  </div>
+                </div>
+                <div class="stat-item mb-3">
+                  <div class="d-flex justify-content-between">
+                    <span>API类型</span>
+                    <span class="badge bg-info" id="apiCards">0</span>
+                  </div>
+                </div>
+                <div class="stat-item mb-3">
+                  <div class="d-flex justify-content-between">
+                    <span>固定文字</span>
+                    <span class="badge bg-success" id="textCards">0</span>
+                  </div>
+                </div>
+                <div class="stat-item">
+                  <div class="d-flex justify-content-between">
+                    <span>批量数据</span>
+                    <span class="badge bg-warning" id="dataCards">0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 自动发货内容 -->
+    <div id="auto-delivery-section" class="content-section">
+      <div class="content-header">
+        <h2 class="mb-0">
+          <i class="bi bi-truck me-2"></i>
+          自动发货
+        </h2>
+        <p class="text-muted mb-0">根据商品关键字自动匹配卡券进行发货</p>
+      </div>
+      <div class="content-body">
+        <!-- 发货规则列表 -->
+        <div class="row">
+          <div class="col-md-8">
+            <div class="card">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">发货规则</h5>
+                <button class="btn btn-primary btn-sm" onclick="showAddDeliveryRuleModal()">
+                  <i class="bi bi-plus-lg me-1"></i>添加规则
+                </button>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-hover">
+                    <thead>
+                      <tr>
+                        <th>商品关键字</th>
+                        <th>匹配卡券</th>
+                        <th>卡券类型</th>
+                        <th>发货数量</th>
+                        <th>状态</th>
+                        <th>已发货次数</th>
+                        <th>操作</th>
+                      </tr>
+                    </thead>
+                    <tbody id="deliveryRulesTableBody">
+                      <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">
+                          <i class="bi bi-truck fs-1 d-block mb-3"></i>
+                          <h5>暂无发货规则</h5>
+                          <p class="mb-0">点击"添加规则"开始配置自动发货规则</p>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card">
+              <div class="card-header">
+                <h5 class="mb-0">发货统计</h5>
+              </div>
+              <div class="card-body">
+                <div class="stat-item mb-3">
+                  <div class="d-flex justify-content-between">
+                    <span>总规则数</span>
+                    <span class="badge bg-primary" id="totalRules">0</span>
+                  </div>
+                </div>
+                <div class="stat-item mb-3">
+                  <div class="d-flex justify-content-between">
+                    <span>启用规则</span>
+                    <span class="badge bg-success" id="activeRules">0</span>
+                  </div>
+                </div>
+                <div class="stat-item mb-3">
+                  <div class="d-flex justify-content-between">
+                    <span>今日发货</span>
+                    <span class="badge bg-info" id="todayDeliveries">0</span>
+                  </div>
+                </div>
+                <div class="stat-item">
+                  <div class="d-flex justify-content-between">
+                    <span>总发货量</span>
+                    <span class="badge bg-warning" id="totalDeliveries">0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 通知渠道管理内容 -->
+    <div id="notification-channels-section" class="content-section">
+      <div class="content-header">
+        <h2 class="mb-0">
+          <i class="bi bi-bell me-2"></i>
+          通知渠道管理
+        </h2>
+        <p class="text-muted mb-0">管理消息通知渠道，支持QQ通知等多种方式</p>
+      </div>
+      <div class="content-body">
+        <!-- 通知渠道类型选择 -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <span><i class="bi bi-plus-circle me-2"></i>添加通知渠道</span>
+          </div>
+          <div class="card-body">
+            <div class="alert alert-info mb-4">
+              <i class="bi bi-info-circle me-2"></i>
+              <strong>选择通知方式：</strong>点击下方按钮选择您要配置的通知渠道类型
+            </div>
+
+            <!-- 通知渠道类型按钮 -->
+            <div class="row g-2">
+              <div class="col-sm-6 col-md-4 col-lg-3 col-xl-2">
+                <div class="card h-100 channel-type-card" onclick="showAddChannelModal('qq')">
+                  <div class="card-body text-center">
+                    <div class="channel-icon">
+                      <i class="bi bi-chat-dots-fill text-primary"></i>
+                    </div>
+                    <h6 class="card-title">QQ通知</h6>
+                    <p class="card-text text-muted">QQ机器人消息</p>
+                    <div class="mt-auto">
+                      <button class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-plus-circle me-1"></i>配置
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-sm-6 col-md-4 col-lg-3 col-xl-2">
+                <div class="card h-100 channel-type-card" onclick="showAddChannelModal('dingtalk')">
+                  <div class="card-body text-center">
+                    <div class="channel-icon">
+                      <i class="bi bi-bell-fill text-info"></i>
+                    </div>
+                    <h6 class="card-title">钉钉通知</h6>
+                    <p class="card-text text-muted">钉钉机器人消息</p>
+                    <div class="mt-auto">
+                      <button class="btn btn-outline-info btn-sm">
+                        <i class="bi bi-plus-circle me-1"></i>配置
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-sm-6 col-md-4 col-lg-3 col-xl-2">
+                <div class="card h-100 channel-type-card" onclick="showAddChannelModal('email')">
+                  <div class="card-body text-center">
+                    <div class="channel-icon">
+                      <i class="bi bi-envelope-fill text-success"></i>
+                    </div>
+                    <h6 class="card-title">邮件通知</h6>
+                    <p class="card-text text-muted">SMTP邮件发送</p>
+                    <div class="mt-auto">
+                      <button class="btn btn-outline-success btn-sm">
+                        <i class="bi bi-plus-circle me-1"></i>配置
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-sm-6 col-md-4 col-lg-3 col-xl-2">
+                <div class="card h-100 channel-type-card" onclick="showAddChannelModal('webhook')">
+                  <div class="card-body text-center">
+                    <div class="channel-icon">
+                      <i class="bi bi-link-45deg text-warning"></i>
+                    </div>
+                    <h6 class="card-title">Webhook</h6>
+                    <p class="card-text text-muted">自定义HTTP请求</p>
+                    <div class="mt-auto">
+                      <button class="btn btn-outline-warning btn-sm">
+                        <i class="bi bi-plus-circle me-1"></i>配置
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-sm-6 col-md-4 col-lg-3 col-xl-2">
+                <div class="card h-100 channel-type-card" onclick="showAddChannelModal('wechat')">
+                  <div class="card-body text-center">
+                    <div class="channel-icon">
+                      <i class="bi bi-wechat text-success"></i>
+                    </div>
+                    <h6 class="card-title">微信通知</h6>
+                    <p class="card-text text-muted">企业微信机器人</p>
+                    <div class="mt-auto">
+                      <button class="btn btn-outline-success btn-sm">
+                        <i class="bi bi-plus-circle me-1"></i>配置
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-sm-6 col-md-4 col-lg-3 col-xl-2">
+                <div class="card h-100 channel-type-card" onclick="showAddChannelModal('telegram')">
+                  <div class="card-body text-center">
+                    <div class="channel-icon">
+                      <i class="bi bi-telegram text-primary"></i>
+                    </div>
+                    <h6 class="card-title">Telegram</h6>
+                    <p class="card-text text-muted">Telegram机器人</p>
+                    <div class="mt-auto">
+                      <button class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-plus-circle me-1"></i>配置
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 通知渠道列表 -->
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-list-ul me-2"></i>通知渠道列表</span>
+            <button class="btn btn-sm btn-outline-primary" onclick="loadNotificationChannels()">
+              <i class="bi bi-arrow-clockwise me-1"></i>刷新
+            </button>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-hover" id="channelsTable">
+                <thead>
+                  <tr>
+                    <th style="width: 10%">ID</th>
+                    <th style="width: 25%">名称</th>
+                    <th style="width: 15%">类型</th>
+                    <th style="width: 20%">配置</th>
+                    <th style="width: 10%">状态</th>
+                    <th style="width: 20%">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="channelsTableBody">
+                  <!-- 动态生成 -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 消息通知配置内容 -->
+    <div id="message-notifications-section" class="content-section">
+      <div class="content-header">
+        <h2 class="mb-0">
+          <i class="bi bi-chat-dots me-2"></i>
+          消息通知配置
+        </h2>
+        <p class="text-muted mb-0">为每个账号配置消息通知渠道</p>
+      </div>
+      <div class="content-body">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-gear me-2"></i>账号通知配置</span>
+            <button class="btn btn-sm btn-outline-primary" onclick="loadMessageNotifications()">
+              <i class="bi bi-arrow-clockwise me-1"></i>刷新
+            </button>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-hover" id="notificationsTable">
+                <thead>
+                  <tr>
+                    <th style="width: 20%">账号ID</th>
+                    <th style="width: 30%">通知渠道</th>
+                    <th style="width: 15%">状态</th>
+                    <th style="width: 35%">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="notificationsTableBody">
+                  <!-- 动态生成 -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 日志管理内容 -->
+    <div id="logs-section" class="content-section">
+      <div class="content-header">
+        <h2 class="mb-0">
+          <i class="bi bi-file-text me-2"></i>
+          日志管理
+        </h2>
+        <p class="text-muted mb-0">实时显示系统日志，支持自动刷新和统计分析</p>
+      </div>
+
+      <div class="content-body">
+        <!-- 日志控制 -->
+        <div class="row mb-3">
+          <div class="col-md-3">
+            <label for="logLines" class="form-label">显示行数</label>
+            <select class="form-select" id="logLines" onchange="refreshLogs()">
+              <option value="100">100行</option>
+              <option value="200" selected>200行</option>
+              <option value="500">500行</option>
+              <option value="1000">1000行</option>
+              <option value="2000">2000行</option>
+            </select>
+          </div>
+          <div class="col-md-9">
+            <label class="form-label">&nbsp;</label>
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-primary" onclick="refreshLogs()">
+                <i class="bi bi-arrow-clockwise me-1"></i>刷新日志
+              </button>
+              <button class="btn btn-outline-secondary" onclick="clearLogsDisplay()">
+                <i class="bi bi-trash me-1"></i>清空显示
+              </button>
+              <button class="btn btn-outline-danger" onclick="clearLogsServer()">
+                <i class="bi bi-trash3 me-1"></i>清空服务器日志
+              </button>
+              <button class="btn btn-outline-info" onclick="showLogStats()">
+                <i class="bi bi-bar-chart me-1"></i>统计信息
+              </button>
+              <button class="btn btn-outline-info" onclick="toggleAutoRefresh()">
+                <i class="bi bi-play-circle me-1"></i><span id="autoRefreshText">开启自动刷新</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 日志显示区域 -->
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>系统日志</span>
+            <div class="d-flex gap-2">
+              <span class="badge bg-secondary" id="logCount">0 条日志</span>
+              <span class="badge bg-info" id="lastUpdate">未更新</span>
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div id="logContainer" class="log-container">
+              <div class="text-center p-4 text-muted">
+                <i class="bi bi-file-text fs-1"></i>
+                <p class="mt-2">点击刷新按钮加载日志</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 系统设置内容 -->
+    <div id="system-settings-section" class="content-section">
+      <div class="content-header">
+        <h2 class="mb-0">
+          <i class="bi bi-gear me-2"></i>
+          系统设置
+        </h2>
+        <p class="text-muted mb-0">管理系统配置和用户设置</p>
+      </div>
+      <div class="content-body">
+        <div class="row">
+          <!-- 密码设置 -->
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <i class="bi bi-shield-lock me-2"></i>密码设置
+              </div>
+              <div class="card-body">
+                <form id="passwordForm">
+                  <div class="mb-3">
+                    <label for="currentPassword" class="form-label">当前密码</label>
+                    <input type="password" class="form-control" id="currentPassword" required>
+                  </div>
+                  <div class="mb-3">
+                    <label for="newPassword" class="form-label">新密码</label>
+                    <input type="password" class="form-control" id="newPassword" required>
+                  </div>
+                  <div class="mb-3">
+                    <label for="confirmPassword" class="form-label">确认新密码</label>
+                    <input type="password" class="form-control" id="confirmPassword" required>
+                  </div>
+                  <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle me-1"></i>更新密码
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- 主题设置 -->
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <i class="bi bi-palette me-2"></i>主题设置
+              </div>
+              <div class="card-body">
+                <form id="themeForm">
+                  <div class="mb-3">
+                    <label for="themeColor" class="form-label">主题颜色</label>
+                    <select class="form-select" id="themeColor">
+                      <option value="blue">蓝色</option>
+                      <option value="green">绿色</option>
+                      <option value="purple">紫色</option>
+                      <option value="red">红色</option>
+                      <option value="orange">橙色</option>
+                    </select>
+                  </div>
+                  <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle me-1"></i>应用主题
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 备份管理 (仅管理员可见) -->
+        <div id="backup-management" class="row mt-4" style="display: none;">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-header">
+                <i class="bi bi-archive me-2"></i>备份管理
+                <span class="badge bg-warning ms-2">管理员专用</span>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <!-- 数据库备份 -->
+                  <div class="col-md-6">
+                    <h6 class="mb-3">
+                      <i class="bi bi-database-down me-2"></i>数据库备份
+                    </h6>
+                    <p class="text-muted mb-3">直接下载完整的数据库文件，包含所有用户数据和设置</p>
+                    <button type="button" class="btn btn-success" onclick="downloadDatabaseBackup()">
+                      <i class="bi bi-download me-1"></i>下载数据库
+                    </button>
+                    <div class="mt-2">
+                      <small class="text-muted">
+                        <i class="bi bi-info-circle me-1"></i>
+                        推荐方式：完整备份，恢复简单
+                      </small>
+                    </div>
+                  </div>
+
+                  <!-- 数据库恢复 -->
+                  <div class="col-md-6">
+                    <h6 class="mb-3">
+                      <i class="bi bi-database-up me-2"></i>数据库恢复
+                    </h6>
+                    <p class="text-muted mb-3">上传数据库文件直接替换当前数据库，系统将自动重新加载</p>
+                    <div class="mb-3">
+                      <input type="file" class="form-control" id="databaseFile" accept=".db">
+                    </div>
+                    <button type="button" class="btn btn-danger" onclick="uploadDatabaseBackup()">
+                      <i class="bi bi-upload me-1"></i>恢复数据库
+                    </button>
+                    <div class="mt-2">
+                      <small class="text-danger">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        警告：将覆盖所有当前数据！
+                      </small>
+                    </div>
+                  </div>
+                </div>
+
+
+
+                <!-- 系统缓存管理 -->
+                <div class="row mt-4">
+                  <div class="col-12">
+                    <h6 class="mb-3">
+                      <i class="bi bi-arrow-clockwise me-2"></i>系统缓存管理
+                    </h6>
+                    <p class="text-muted mb-3">如果导入备份后关键字等数据没有立即更新，可以手动刷新系统缓存</p>
+                    <button type="button" class="btn btn-info" onclick="reloadSystemCache()">
+                      <i class="bi bi-arrow-clockwise me-1"></i>刷新系统缓存
+                    </button>
+                  </div>
+                </div>
+
+                <div class="alert alert-warning mt-4" role="alert">
+                  <i class="bi bi-exclamation-triangle me-2"></i>
+                  <strong>注意：</strong>导入备份将会覆盖当前系统的所有数据，请谨慎操作！建议在导入前先导出当前数据作为备份。
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 关于页面内容 -->
+    <div id="about-section" class="content-section">
+      <div class="content-header">
+        <h2 class="mb-0">
+          <i class="bi bi-info-circle me-2"></i>
+          关于
+        </h2>
+        <p class="text-muted mb-0">联系我们和技术支持</p>
+      </div>
+      <div class="content-body">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <i class="bi bi-wechat me-2"></i>微信群
+              </div>
+              <div class="card-body text-center">
+                <img src="/static/wechat-group.png" alt="微信群二维码" class="img-fluid" style="max-width: 200px;">
+                <p class="mt-3 text-muted">扫码加入微信技术交流群</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <i class="bi bi-chat-square me-2"></i>QQ群
+              </div>
+              <div class="card-body text-center">
+                <img src="/static/qq-group.png" alt="QQ群二维码" class="img-fluid" style="max-width: 200px;">
+                <p class="mt-3 text-muted">扫码加入QQ技术交流群</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div> <!-- 结束 main-content -->
+
+  <!-- 扫码登录模态框 -->
+  <div class="modal fade" id="qrCodeLoginModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title">
+            <i class="bi bi-qr-code me-2"></i>扫码登录闲鱼账号
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body text-center py-4">
+          <!-- 步骤指引 -->
+          <div class="row mb-4">
+            <div class="col-12">
+              <div class="d-flex justify-content-center align-items-center">
+                <div class="step-item me-3">
+                  <div class="step-number bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">1</div>
+                  <small class="d-block mt-1">打开闲鱼APP</small>
+                </div>
+                <i class="bi bi-arrow-right text-muted me-3"></i>
+                <div class="step-item me-3">
+                  <div class="step-number bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">2</div>
+                  <small class="d-block mt-1">扫描二维码</small>
+                </div>
+                <i class="bi bi-arrow-right text-muted me-3"></i>
+                <div class="step-item">
+                  <div class="step-number bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">3</div>
+                  <small class="d-block mt-1">自动添加账号</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 二维码区域 -->
+          <div id="qrCodeContainer">
+            <div class="spinner-border text-success mb-3" role="status" style="width: 3rem; height: 3rem;">
+              <span class="visually-hidden">生成二维码中...</span>
+            </div>
+            <p class="text-muted fs-5 mb-2">正在生成二维码...</p>
+            <div class="alert alert-warning border-0 bg-light-warning d-inline-block qr-loading-tip">
+              <i class="bi bi-clock me-2 text-warning"></i>
+              <small class="text-warning fw-bold">二维码生成较慢，请耐心等待</small>
+            </div>
+          </div>
+          <div id="qrCodeImage" style="display: none;">
+            <div class="qr-code-wrapper p-3 bg-light rounded-3 d-inline-block mb-3">
+              <img id="qrCodeImg" src="" alt="登录二维码" class="img-fluid" style="max-width: 280px;">
+            </div>
+            <h6 class="text-success mb-2">
+              <i class="bi bi-phone me-2"></i>请使用闲鱼APP扫描二维码
+            </h6>
+            <div class="alert alert-info border-0 bg-light">
+              <i class="bi bi-info-circle me-2 text-info"></i>
+              <small>扫码后请等待页面提示，系统会自动获取并保存您的账号信息</small>
+            </div>
+          </div>
+
+          <!-- 状态显示 -->
+          <div id="qrCodeStatus" class="mt-3">
+            <div class="d-flex align-items-center justify-content-center">
+              <div class="spinner-border spinner-border-sm text-success me-2" role="status" style="display: none;" id="statusSpinner">
+                <span class="visually-hidden">检查中...</span>
+              </div>
+              <span id="statusText" class="text-muted">等待扫码...</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle me-1"></i>关闭
+          </button>
+          <button type="button" class="btn btn-success" onclick="refreshQRCode()" id="refreshQRBtn">
+            <i class="bi bi-arrow-clockwise me-1"></i>重新生成二维码
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 添加通知渠道模态框 -->
+  <div class="modal fade" id="addChannelModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-plus-circle me-2"></i>
+            <span id="addChannelModalTitle">添加通知渠道</span>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <!-- 渠道类型说明 -->
+          <div id="channelTypeInfo" class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            <span id="channelTypeDescription">请配置通知渠道信息</span>
+          </div>
+
+          <form id="addChannelForm">
+            <input type="hidden" id="channelType">
+
+            <!-- 基本信息 -->
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="channelName" class="form-label">渠道名称 <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="channelName" placeholder="例如：我的QQ通知" required>
+              </div>
+              <div class="col-md-6">
+                <label for="channelEnabled" class="form-label">状态</label>
+                <div class="form-check form-switch mt-2">
+                  <input class="form-check-input" type="checkbox" id="channelEnabled" checked>
+                  <label class="form-check-label" for="channelEnabled">
+                    启用此通知渠道
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- 动态配置字段 -->
+            <div id="channelConfigFields">
+              <!-- 根据渠道类型动态生成 -->
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle me-1"></i>取消
+          </button>
+          <button type="button" class="btn btn-primary" onclick="saveNotificationChannel()">
+            <i class="bi bi-check-circle me-1"></i>保存配置
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 编辑通知渠道模态框 -->
+  <div class="modal fade" id="editChannelModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-pencil me-2"></i>
+            编辑通知渠道
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="editChannelForm">
+            <input type="hidden" id="editChannelId">
+            <input type="hidden" id="editChannelType">
+
+            <!-- 基本信息 -->
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="editChannelName" class="form-label">渠道名称 <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="editChannelName" placeholder="例如：我的QQ通知" required>
+              </div>
+              <div class="col-md-6">
+                <label for="editChannelEnabled" class="form-label">状态</label>
+                <div class="form-check form-switch mt-2">
+                  <input class="form-check-input" type="checkbox" id="editChannelEnabled" checked>
+                  <label class="form-check-label" for="editChannelEnabled">
+                    启用此通知渠道
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- 动态配置字段 -->
+            <div id="editChannelConfigFields">
+              <!-- 根据渠道类型动态生成 -->
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-primary" onclick="updateNotificationChannel()">保存修改</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 配置账号通知模态框 -->
+  <div class="modal fade" id="configNotificationModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-gear me-2"></i>
+            配置账号通知
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="configNotificationForm">
+            <input type="hidden" id="configAccountId">
+            <div class="mb-3">
+              <label class="form-label">账号ID</label>
+              <input type="text" class="form-control" id="displayAccountId" readonly>
+            </div>
+            <div class="mb-3">
+              <label for="notificationChannel" class="form-label">选择通知渠道 <span class="text-danger">*</span></label>
+              <select class="form-select" id="notificationChannel" required>
+                <option value="">请选择通知渠道</option>
+              </select>
+              <small class="form-text text-muted">选择要接收此账号消息通知的渠道</small>
+            </div>
+            <div class="mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="notificationEnabled" checked>
+                <label class="form-check-label" for="notificationEnabled">
+                  启用消息通知
+                </label>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-primary" onclick="saveAccountNotification()">保存配置</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 添加卡券模态框 -->
+  <div class="modal fade" id="addCardModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-credit-card me-2"></i>
+            添加卡券
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="addCardForm" onsubmit="event.preventDefault(); saveCard(); return false;">
+            <div class="mb-3">
+              <label class="form-label">卡券名称 <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="cardName" placeholder="例如：游戏点卡、会员卡等" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">卡券类型 <span class="text-danger">*</span></label>
+              <select class="form-select" id="cardType" onchange="toggleCardTypeFields()" required>
+                <option value="">请选择类型</option>
+                <option value="api">API接口</option>
+                <option value="text">固定文字</option>
+                <option value="data">批量数据</option>
+                <option value="image">图片</option>
+              </select>
+            </div>
+
+            <!-- API配置 -->
+            <div id="apiFields" class="card mb-3" style="display: none;">
+              <div class="card-header">
+                <h6 class="mb-0">API配置</h6>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label class="form-label">API地址</label>
+                  <input type="url" class="form-control" id="apiUrl" placeholder="https://api.example.com/get-card">
+                </div>
+                <div class="row">
+                  <div class="col-md-6">
+                    <label class="form-label">请求方法</label>
+                    <select class="form-select" id="apiMethod">
+                      <option value="GET">GET</option>
+                      <option value="POST">POST</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">超时时间(秒)</label>
+                    <input type="number" class="form-control" id="apiTimeout" value="10" min="1" max="60">
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">请求头 (JSON格式)</label>
+                  <textarea class="form-control" id="apiHeaders" rows="3" placeholder='{"Authorization": "Bearer token", "Content-Type": "application/json"}'></textarea>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">请求参数 (JSON格式)</label>
+                  <textarea class="form-control" id="apiParams" rows="3" placeholder='{"type": "card", "count": 1}'></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- 固定文字配置 -->
+            <div id="textFields" class="card mb-3" style="display: none;">
+              <div class="card-header">
+                <h6 class="mb-0">固定文字配置</h6>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label class="form-label">固定文字内容</label>
+                  <textarea class="form-control" id="textContent" rows="5" placeholder="请输入要发送的固定文字内容..."></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- 批量数据配置 -->
+            <div id="dataFields" class="card mb-3" style="display: none;">
+              <div class="card-header">
+                <h6 class="mb-0">批量数据配置</h6>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label class="form-label">数据内容 (一行一个)</label>
+                  <textarea class="form-control" id="dataContent" rows="10" placeholder="请输入数据，每行一个：&#10;卡号1:密码1&#10;卡号2:密码2&#10;或者&#10;兑换码1&#10;兑换码2"></textarea>
+                  <small class="form-text text-muted">支持格式：卡号:密码 或 单独的兑换码</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- 图片配置 -->
+            <div id="imageFields" class="card mb-3" style="display: none;">
+              <div class="card-header">
+                <h6 class="mb-0">图片配置</h6>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label class="form-label">选择图片 <span class="text-danger">*</span></label>
+                  <input type="file" class="form-control" id="cardImageFile" accept="image/*">
+                  <small class="form-text text-muted">
+                    <i class="bi bi-info-circle me-1"></i>
+                    支持JPG、PNG、GIF格式，最大5MB，建议尺寸不超过4096x4096像素
+                  </small>
+                </div>
+
+                <div id="cardImagePreview" class="mb-3" style="display: none;">
+                  <label class="form-label">图片预览</label>
+                  <div class="preview-container">
+                    <img id="cardPreviewImg" src="" alt="预览图片"
+                         style="max-width: 100%; max-height: 300px; border-radius: 8px; border: 1px solid #ddd;">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">延时发货时间</label>
+              <div class="input-group">
+                <input type="number" class="form-control" id="cardDelaySeconds" value="0" min="0" max="3600" placeholder="0">
+                <span class="input-group-text">秒</span>
+              </div>
+              <small class="form-text text-muted">
+                <i class="bi bi-clock me-1"></i>
+                设置自动发货的延时时间，0表示立即发货，最大3600秒(1小时)
+              </small>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">备注信息</label>
+              <textarea class="form-control" id="cardDescription" rows="3" placeholder="可选的备注信息，支持变量替换：&#10;{DELIVERY_CONTENT} - 发货内容&#10;例如：您的卡券信息：{DELIVERY_CONTENT}，请妥善保管。"></textarea>
+              <small class="form-text text-muted">
+                <i class="bi bi-info-circle me-1"></i>
+                备注内容会与发货内容一起发送。使用 <code>{DELIVERY_CONTENT}</code> 变量可以在备注中插入实际的发货内容。
+              </small>
+            </div>
+
+            <!-- 多规格设置 -->
+            <div class="mb-3">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="isMultiSpec" onchange="toggleMultiSpecFields()">
+                <label class="form-check-label" for="isMultiSpec">
+                  <strong>多规格卡券</strong>
+                </label>
+              </div>
+              <div class="form-text">开启后可以为同一商品的不同规格创建不同的卡券</div>
+            </div>
+
+            <!-- 多规格字段 -->
+            <div id="multiSpecFields" style="display: none;">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">规格名称 <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="specName" placeholder="例如：套餐类型、颜色、尺寸">
+                    <div class="form-text">规格的名称，如套餐类型、颜色等</div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">规格值 <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="specValue" placeholder="例如：30天、红色、XL">
+                    <div class="form-text">具体的规格值，如30天、红色等</div>
+                  </div>
+                </div>
+              </div>
+              <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i>
+                <strong>多规格说明：</strong>
+                <ul class="mb-0 mt-2">
+                  <li>同一卡券名称可以创建多个不同规格的卡券</li>
+                  <li>卡券名称+规格名称+规格值必须唯一</li>
+                  <li>自动发货时会优先匹配精确规格，找不到时使用普通卡券兜底</li>
+                </ul>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-primary" onclick="saveCard()">保存卡券</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 编辑卡券模态框 -->
+  <div class="modal fade" id="editCardModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-pencil me-2"></i>
+            编辑卡券
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="editCardForm">
+            <input type="hidden" id="editCardId">
+            <div class="mb-3">
+              <label class="form-label">卡券名称 <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="editCardName" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">卡券类型 <span class="text-danger">*</span></label>
+              <select class="form-select" id="editCardType" onchange="toggleEditCardTypeFields()" required>
+                <option value="api">API接口</option>
+                <option value="text">固定文字</option>
+                <option value="data">批量数据</option>
+                <option value="image">图片</option>
+              </select>
+            </div>
+
+            <!-- API配置 -->
+            <div id="editApiFields" class="card mb-3" style="display: none;">
+              <div class="card-header">
+                <h6 class="mb-0">API配置</h6>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label class="form-label">API地址</label>
+                  <input type="url" class="form-control" id="editApiUrl">
+                </div>
+                <div class="row">
+                  <div class="col-md-6">
+                    <label class="form-label">请求方法</label>
+                    <select class="form-select" id="editApiMethod">
+                      <option value="GET">GET</option>
+                      <option value="POST">POST</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">超时时间(秒)</label>
+                    <input type="number" class="form-control" id="editApiTimeout" value="10" min="1" max="60">
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">请求头 (JSON格式)</label>
+                  <textarea class="form-control" id="editApiHeaders" rows="3"></textarea>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">请求参数 (JSON格式)</label>
+                  <textarea class="form-control" id="editApiParams" rows="3"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- 固定文字配置 -->
+            <div id="editTextFields" class="card mb-3" style="display: none;">
+              <div class="card-header">
+                <h6 class="mb-0">固定文字配置</h6>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label class="form-label">固定文字内容</label>
+                  <textarea class="form-control" id="editTextContent" rows="5"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- 批量数据配置 -->
+            <div id="editDataFields" class="card mb-3" style="display: none;">
+              <div class="card-header">
+                <h6 class="mb-0">批量数据配置</h6>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label class="form-label">数据内容 (一行一个)</label>
+                  <textarea class="form-control" id="editDataContent" rows="10"></textarea>
+                  <small class="form-text text-muted">支持格式：卡号:密码 或 单独的兑换码</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- 图片配置 -->
+            <div id="editImageFields" class="card mb-3" style="display: none;">
+              <div class="card-header">
+                <h6 class="mb-0">图片配置</h6>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label class="form-label">当前图片</label>
+                  <div id="editCurrentImagePreview" style="display: none;">
+                    <img id="editCurrentImg" src="" alt="当前图片"
+                         style="max-width: 100%; max-height: 200px; border-radius: 8px; border: 1px solid #ddd;">
+                    <div class="mt-2">
+                      <small class="text-muted">当前使用的图片</small>
+                    </div>
+                  </div>
+                  <div id="editNoImageText" class="text-muted">
+                    <i class="bi bi-image me-1"></i>暂无图片
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">更换图片</label>
+                  <input type="file" class="form-control" id="editCardImageFile" accept="image/*">
+                  <small class="form-text text-muted">
+                    <i class="bi bi-info-circle me-1"></i>
+                    支持JPG、PNG、GIF格式，最大5MB，建议尺寸不超过4096x4096像素
+                  </small>
+                </div>
+
+                <div id="editCardImagePreview" class="mb-3" style="display: none;">
+                  <label class="form-label">新图片预览</label>
+                  <div class="preview-container">
+                    <img id="editCardPreviewImg" src="" alt="预览图片"
+                         style="max-width: 100%; max-height: 300px; border-radius: 8px; border: 1px solid #ddd;">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="editCardEnabled">
+                <label class="form-check-label" for="editCardEnabled">
+                  启用此卡券
+                </label>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">延时发货时间</label>
+              <div class="input-group">
+                <input type="number" class="form-control" id="editCardDelaySeconds" value="0" min="0" max="3600" placeholder="0">
+                <span class="input-group-text">秒</span>
+              </div>
+              <small class="form-text text-muted">
+                <i class="bi bi-clock me-1"></i>
+                设置自动发货的延时时间，0表示立即发货，最大3600秒(1小时)
+              </small>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">备注信息</label>
+              <textarea class="form-control" id="editCardDescription" rows="3" placeholder="可选的备注信息，支持变量替换：&#10;{DELIVERY_CONTENT} - 发货内容&#10;例如：您的卡券信息：{DELIVERY_CONTENT}，请妥善保管。"></textarea>
+              <small class="form-text text-muted">
+                <i class="bi bi-info-circle me-1"></i>
+                备注内容会与发货内容一起发送。使用 <code>{DELIVERY_CONTENT}</code> 变量可以在备注中插入实际的发货内容。
+              </small>
+            </div>
+
+            <!-- 多规格设置 -->
+            <div class="mb-3">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="editIsMultiSpec" onchange="toggleEditMultiSpecFields()">
+                <label class="form-check-label" for="editIsMultiSpec">
+                  <strong>多规格卡券</strong>
+                </label>
+              </div>
+              <div class="form-text">开启后可以为同一商品的不同规格创建不同的卡券</div>
+            </div>
+
+            <!-- 多规格字段 -->
+            <div id="editMultiSpecFields" style="display: none;">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">规格名称 <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="editSpecName" placeholder="例如：套餐类型、颜色、尺寸">
+                    <div class="form-text">规格的名称，如套餐类型、颜色等</div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">规格值 <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="editSpecValue" placeholder="例如：30天、红色、XL">
+                    <div class="form-text">具体的规格值，如30天、红色等</div>
+                  </div>
+                </div>
+              </div>
+              <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i>
+                <strong>多规格说明：</strong>
+                <ul class="mb-0 mt-2">
+                  <li>同一卡券名称可以创建多个不同规格的卡券</li>
+                  <li>卡券名称+规格名称+规格值必须唯一</li>
+                  <li>自动发货时会优先匹配精确规格，找不到时使用普通卡券兜底</li>
+                </ul>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-primary" onclick="updateCard()">保存修改</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 添加发货规则模态框 -->
+  <div class="modal fade" id="addDeliveryRuleModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-truck me-2"></i>
+            添加发货规则
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="addDeliveryRuleForm">
+            <div class="mb-3">
+              <label class="form-label">商品关键字 <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="productKeyword" placeholder="例如：游戏点卡、会员卡等" required>
+              <small class="form-text text-muted">当商品标题包含此关键字时触发自动发货</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">匹配卡券 <span class="text-danger">*</span></label>
+              <select class="form-select" id="selectedCard" required>
+                <option value="">请选择卡券</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">发货数量</label>
+              <input type="number" class="form-control" id="deliveryCount" value="1" min="1" max="10">
+              <small class="form-text text-muted">每次发货的数量</small>
+            </div>
+            <div class="mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="ruleEnabled" checked>
+                <label class="form-check-label" for="ruleEnabled">
+                  启用此规则
+                </label>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">备注</label>
+              <textarea class="form-control" id="ruleDescription" rows="2" placeholder="可选的备注信息..."></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-primary" onclick="saveDeliveryRule()">保存规则</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 编辑发货规则模态框 -->
+  <div class="modal fade" id="editDeliveryRuleModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-pencil me-2"></i>
+            编辑发货规则
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="editDeliveryRuleForm">
+            <input type="hidden" id="editRuleId">
+            <div class="mb-3">
+              <label class="form-label">商品关键字 <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="editProductKeyword" required>
+              <small class="form-text text-muted">当商品标题包含此关键字时触发自动发货</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">匹配卡券 <span class="text-danger">*</span></label>
+              <select class="form-select" id="editSelectedCard" required>
+                <option value="">请选择卡券</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">发货数量</label>
+              <input type="number" class="form-control" id="editDeliveryCount" value="1" min="1" max="10">
+              <small class="form-text text-muted">每次发货的数量</small>
+            </div>
+            <div class="mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="editRuleEnabled">
+                <label class="form-check-label" for="editRuleEnabled">
+                  启用此规则
+                </label>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">备注</label>
+              <textarea class="form-control" id="editRuleDescription" rows="2"></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-primary" onclick="updateDeliveryRule()">保存修改</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 加载动画 -->
+  <div class="loading d-none" id="loading">
+    <div class="spinner-border text-primary loading-spinner" role="status">
+      <span class="visually-hidden">加载中...</span>
+    </div>
+  </div>
+
+  <!-- 提示消息容器 -->
+  <div class="toast-container"></div>
+
+  <!-- JS 依赖 -->
+  <script src="/static/lib/bootstrap/bootstrap.bundle.min.js"></script>
+  <script type="module" src="/static/js/app.js?v=20260320001"></script>
+
+  <!-- 默认回复管理模态框 -->
+  <div class="modal fade" id="defaultReplyManagerModal" tabindex="-1" aria-labelledby="defaultReplyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="defaultReplyModalLabel">
+            <i class="bi bi-chat-text me-2"></i>默认回复管理
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>功能说明：</strong>当没有匹配到关键词时，系统会使用默认回复。支持以下变量：
+            <code>{send_user_name}</code> 用户昵称、
+            <code>{send_user_id}</code> 用户ID、
+            <code>{send_message}</code> 用户消息
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-hover" id="defaultReplyTable">
+              <thead>
+                <tr>
+                  <th style="width: 15%">账号ID</th>
+                  <th style="width: 15%">状态</th>
+                  <th style="width: 50%">默认回复内容</th>
+                  <th style="width: 20%">操作</th>
+                </tr>
+              </thead>
+              <tbody id="defaultReplyTableBody">
+                <!-- 动态生成 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <div class="text-muted me-auto">
+            <small><i class="bi bi-info-circle me-1"></i>请点击每个账号的"编辑"按钮进行单独设置</small>
+          </div>
+          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+            <i class="bi bi-check-circle me-1"></i>完成
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 编辑默认回复模态框 -->
+  <div class="modal fade" id="editDefaultReplyModal" tabindex="-1" aria-labelledby="editDefaultReplyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editDefaultReplyModalLabel">
+            <i class="bi bi-pencil-square me-2"></i>编辑默认回复
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="editDefaultReplyForm">
+            <input type="hidden" id="editAccountId" />
+
+            <div class="mb-3">
+              <label class="form-label">账号ID</label>
+              <input type="text" class="form-control" id="editAccountIdDisplay" readonly />
+            </div>
+
+            <div class="mb-3">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="editDefaultReplyEnabled" onchange="toggleReplyContentVisibility()" />
+                <label class="form-check-label" for="editDefaultReplyEnabled">
+                  启用默认回复
+                </label>
+              </div>
+            </div>
+
+            <div class="mb-3" id="editReplyContentGroup">
+              <label for="editReplyContent" class="form-label">默认回复内容</label>
+              <textarea class="form-control" id="editReplyContent" rows="4"
+                placeholder="请输入默认回复内容，支持变量：{send_user_name} {send_user_id} {send_message}"></textarea>
+              <div class="form-text">
+                <strong>可用变量：</strong>
+                <span class="badge bg-secondary me-1">{send_user_name}</span>
+                <span class="badge bg-secondary me-1">{send_user_id}</span>
+                <span class="badge bg-secondary me-1">{send_message}</span>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-primary" onclick="saveDefaultReply()">
+            <i class="bi bi-check-circle me-1"></i>保存
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 编辑商品详情模态框 -->
+  <div class="modal fade" id="editItemModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-pencil me-2"></i>编辑商品详情
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="editItemForm">
+            <input type="hidden" id="editItemCookieId">
+            <input type="hidden" id="editItemId">
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label">账号ID</label>
+                <input type="text" class="form-control" id="editItemCookieIdDisplay" readonly>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">商品ID</label>
+                <input type="text" class="form-control" id="editItemIdDisplay" readonly>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="editItemDetail" class="form-label">商品详情 <span class="text-danger">*</span></label>
+              <textarea class="form-control" id="editItemDetail" rows="20"
+                        placeholder="请输入商品详情内容..."></textarea>
+              <div class="form-text">
+                <i class="bi bi-info-circle me-1"></i>
+                请输入商品详情内容，这些内容将用于自动发货时的关键词匹配。
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-primary" onclick="saveItemDetail()">
+            <i class="bi bi-check-circle me-1"></i>保存
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+
+  <!-- AI回复配置模态框 -->
+  <div class="modal fade" id="aiReplyConfigModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-robot me-2"></i>AI回复配置
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="aiReplyConfigForm">
+            <input type="hidden" id="aiConfigAccountId">
+
+            <!-- 基本设置 -->
+            <div class="card mb-3">
+              <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-gear me-2"></i>基本设置</h6>
+              </div>
+              <div class="card-body">
+                <div class="row mb-3">
+                  <div class="col-md-6">
+                    <label class="form-label">账号ID</label>
+                    <input type="text" class="form-control" id="aiConfigAccountIdDisplay" readonly>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-check form-switch mt-4">
+                      <input class="form-check-input" type="checkbox" id="aiReplyEnabled"
+                        onchange="toggleAIReplySettings()">
+                      <label class="form-check-label" for="aiReplyEnabled">
+                        <strong>启用AI回复</strong>
+                      </label>
+                      <small class="form-text text-muted d-block">启用后将自动禁用关键词匹配和默认回复</small>
+                    </div>
+                  </div>
+                </div>
+
+                <div id="aiReplySettings" style="display: none;">
+                  <div class="row mb-3">
+                    <div class="col-md-6">
+                      <label for="aiModelName" class="form-label"></label>AI模型</label>
+                      <select class="form-select" id="aiModelName" onchange="toggleCustomModelInput()">
+                        <option value="qwen-plus">通义千问Plus</option>
+                        <option value="qwen-turbo">通义千问Turbo</option>
+                        <option value="qwen-max">通义千问Max</option>
+                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                        <option value="gpt-4">GPT-4</option>
+                        <option value="custom">自定义模型</option>
+                      </select>
+                      <input type="text" class="form-control mt-2" id="customModelName" placeholder="请输入自定义模型名称"
+                        style="display: none;">
+                    </div>
+                    <div class="col-md-6">
+                      <label for="aiBaseUrl" class="form-label">API地址</label>
+                      <input type="url" class="form-control" id="aiBaseUrl"
+                        value="https://dashscope.aliyuncs.com/compatible-mode/v1" placeholder="API Base URL">
+                    </div>
+                  </div>
+
+                  <div class="mb-3">
+                    <label for="aiApiKey" class="form-label">API密钥 <span class="text-danger">*</span></label>
+                    <input type="password" class="form-control" id="aiApiKey" placeholder="请输入API密钥" required>
+                    <small class="form-text text-muted">
+                      通义千问请使用DashScope API Key，GPT请使用OpenAI API Key
+                    </small>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 议价设置 -->
+            <div class="card mb-3" id="bargainSettings" style="display: none;">
+              <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-currency-dollar me-2"></i>议价设置</h6>
+              </div>
+              <div class="card-body">
+                <div class="row mb-3">
+                  <div class="col-md-4">
+                    <label for="maxDiscountPercent" class="form-label">最大优惠百分比</label>
+                    <div class="input-group">
+                      <input type="number" class="form-control" id="maxDiscountPercent"
+                             min="0" max="50" value="10">
+                      <span class="input-group-text">%</span>
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <label for="maxDiscountAmount" class="form-label">最大优惠金额</label>
+                    <div class="input-group">
+                      <input type="number" class="form-control" id="maxDiscountAmount"
+                             min="0" value="100">
+                      <span class="input-group-text">元</span>
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <label for="maxBargainRounds" class="form-label">最大议价轮数</label>
+                    <input type="number" class="form-control" id="maxBargainRounds"
+                           min="1" max="10" value="3">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 提示词设置 -->
+            <div class="card mb-3" id="promptSettings" style="display: none;">
+              <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-chat-quote me-2"></i>提示词设置</h6>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label class="form-label">自定义提示词 (JSON格式)</label>
+                  <textarea class="form-control" id="customPrompts" rows="8"
+                            placeholder='{"classify": "分类提示词", "price": "议价提示词", "tech": "技术提示词", "default": "默认提示词"}'></textarea>
+                  <small class="form-text text-muted">
+                    留空使用系统默认提示词。格式：{"classify": "...", "price": "...", "tech": "...", "default": "..."}
+                  </small>
+                </div>
+              </div>
+            </div>
+
+            <!-- 测试区域 -->
+            <div class="card" id="testArea" style="display: none;">
+              <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-play-circle me-2"></i>功能测试</h6>
+              </div>
+              <div class="card-body">
+                <div class="row mb-3">
+                  <div class="col-md-6">
+                    <label for="testMessage" class="form-label">测试消息</label>
+                    <input type="text" class="form-control" id="testMessage"
+                           value="你好，这个商品能便宜点吗？" placeholder="输入测试消息">
+                  </div>
+                  <div class="col-md-6">
+                    <label for="testItemPrice" class="form-label">商品价格</label>
+                    <input type="number" class="form-control" id="testItemPrice"
+                           value="100" placeholder="商品价格">
+                  </div>
+                </div>
+                <button type="button" class="btn btn-outline-primary" onclick="testAIReply()">
+                  <i class="bi bi-play me-1"></i>测试AI回复
+                </button>
+                <div id="testResult" class="mt-3" style="display: none;">
+                  <div class="alert alert-info">
+                    <strong>AI回复：</strong>
+                    <div id="testReplyContent"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-primary" onclick="saveAIReplyConfig()">
+            <i class="bi bi-check-lg me-1"></i>保存配置
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 导入关键词模态框 -->
+  <div class="modal fade" id="importKeywordsModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-upload me-2"></i>导入关键词
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">选择Excel文件</label>
+            <input type="file" class="form-control" id="importFileInput" accept=".xlsx,.xls">
+            <div class="form-text">
+              <i class="bi bi-info-circle me-1"></i>
+              请上传包含"关键词"、"商品ID"、"关键词内容"三列的Excel文件（仅导入文本类型关键词，图片关键词将保留）
+            </div>
+          </div>
+          <div class="alert alert-warning">
+            <h6><i class="bi bi-exclamation-triangle me-1"></i>导入说明：</h6>
+            <ul class="mb-0">
+              <li>Excel文件必须包含三列：关键词、商品ID、关键词内容</li>
+              <li>商品ID可以为空，表示通用关键词</li>
+              <li>导入的关键词默认为文本类型</li>
+              <li>如果关键词+商品ID组合已存在，将更新关键词内容</li>
+              <li><strong>导入只会替换文本类型关键词，图片关键词将被保留</strong></li>
+              <li>导入完成后，您的图片关键词仍然存在且正常工作</li>
+            </ul>
+          </div>
+          <div id="importProgress" style="display: none;">
+            <div class="progress mb-2">
+              <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+            </div>
+            <small class="text-muted">正在导入...</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-primary" onclick="importKeywords()">
+            <i class="bi bi-upload me-1"></i>开始导入
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 添加图片关键词模态框 -->
+  <div class="modal fade" id="addImageKeywordModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-image me-2"></i>添加图片关键词
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="addImageKeywordForm">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">关键词 <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" id="imageKeyword" placeholder="例如：图片、照片" required>
+                  <div class="form-text">用户发送此关键词时将回复图片</div>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">关联商品（可选）</label>
+                  <select class="form-select" id="imageItemIdSelect">
+                    <option value="">选择商品或留空表示通用关键词</option>
+                  </select>
+                  <div class="form-text">选择特定商品时，仅在该商品对话中生效</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">上传图片 <span class="text-danger">*</span></label>
+                  <input type="file" class="form-control" id="imageFile" accept="image/*" required>
+                  <div class="form-text">支持 JPG、PNG、GIF 格式，建议大小不超过 5MB</div>
+                </div>
+                <div class="mb-3">
+                  <div class="image-preview" id="imagePreview" style="display: none;">
+                    <label class="form-label">图片预览</label>
+                    <div class="preview-container">
+                      <img id="previewImg" src="" alt="预览图片" style="max-width: 100%; max-height: 200px; border-radius: 8px; border: 1px solid #ddd;">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="alert alert-info">
+              <i class="bi bi-info-circle me-2"></i>
+              <strong>说明：</strong>
+              <ul class="mb-0 mt-2">
+                <li>图片关键词优先级高于文本关键词</li>
+                <li>用户发送匹配的关键词时，系统将回复上传的图片</li>
+                <li>图片将被转换为适合聊天的格式</li>
+              </ul>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-primary" onclick="addImageKeyword()">
+            <i class="bi bi-plus-lg me-1"></i>添加图片关键词
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
