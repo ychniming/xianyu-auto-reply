@@ -1,0 +1,31 @@
+services:
+  xianyu-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: xianyu-auto-reply:latest
+    container_name: xianyu-auto-reply
+    restart: unless-stopped
+    user: "0:0"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - TZ=Asia/Shanghai
+      - DB_PATH=/app/data/xianyu_data.db
+      - LOG_LEVEL=INFO
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=admin123
+      - JWT_SECRET_KEY=default-secret-key
+      - TOKEN_EXPIRE_TIME=86400
+      - MULTIUSER_ENABLED=true
+      - AUTO_REPLY_ENABLED=true
+      - AUTO_DELIVERY_ENABLED=true
+
+networks:
+  xianyu-network:
+    driver: bridge

@@ -1,0 +1,19 @@
+{
+  "name": "xianyu-auto-reply-frontend-tests",
+  "version": "1.0.0",
+  "description": "Frontend JavaScript modules test suite for Xianyu Auto Reply",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:unit": "vitest run tests/frontend/unit",
+    "test:integration": "vitest run tests/frontend/integration",
+    "test:all": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^1.2.0",
+    "@vitest/coverage-v8": "^1.2.0",
+    "jsdom": "^24.0.0"
+  }
+}

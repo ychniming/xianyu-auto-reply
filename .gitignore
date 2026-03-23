@@ -1,0 +1,123 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+!static/lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+MANIFEST
+*.manifest
+*.spec
+.cache
+
+# Virtual environments
+.venv
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+db.sqlite3
+__pypackages__/
+
+# Logs
+*.log
+logs/
+realtime.log
+
+# Local settings
+local_settings.py
+.env.local
+.env.*.local
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ==================== 项目特定文件 ====================
+
+# 数据目录
+data/
+backups/
+
+# Excel 文件
+keywords_*.xlsx
+*.xls
+*.xlsx
+
+# 图片缓存
+*.png.cache
+*.jpg.cache
+
+# 上传的文件
+static/uploads/*
+!static/uploads/.gitkeep
+!static/uploads/images/
+static/uploads/images/*
+!static/uploads/images/.gitkeep
+
+# 配置文件（包含敏感信息）
+config.local.yml
+global_config.local.yml
+configs/.env
+configs/global_config.yml
+
+# 测试文件
+test_*.py
+*_test.py
+keywords_sample.xlsx
+
+# 备份文件
+*.bak
+*.backup
+*.old
+
+# 压缩文件
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# 部署包
+deploy/*.tar.gz
+
+# Nginx 配置文件（服务器特定）
+configs/*nginx*.conf
+
+# 服务器部署脚本
+scripts/update-server.sh
+scripts/deploy-*.sh

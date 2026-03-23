@@ -1,0 +1,462 @@
+/**
+ * Components Styles - 组件样式
+ * 包含按钮、卡片、表单、模态框、徽章等可复用组件
+ */
+
+/* ========== 卡片样式 ========== */
+
+.card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    margin-bottom: 2rem;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.card-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+    color: white;
+    border: none;
+    border-radius: 16px 16px 0 0;
+    font-weight: 600;
+    font-size: 1.1rem;
+    padding: 1.25rem 1.5rem;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* ========== 按钮样式 ========== */
+
+.btn {
+    border-radius: 10px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    padding: 0.5rem 1rem;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+    border: none;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, var(--success-color), #059669);
+    border: none;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, var(--danger-color), #dc2626);
+    border: none;
+}
+
+.btn-outline-primary {
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.btn-outline-success {
+    border: 2px solid var(--success-color);
+    color: var(--success-color);
+}
+
+.btn-outline-success:hover {
+    background: var(--success-color);
+    border-color: var(--success-color);
+    color: white;
+}
+
+.btn-outline-info {
+    border: 2px solid #0dcaf0;
+    color: #0dcaf0;
+}
+
+.btn-outline-info:hover {
+    background: #0dcaf0;
+    border-color: #0dcaf0;
+    color: white;
+}
+
+.btn-outline-danger {
+    border: 2px solid var(--danger-color);
+    color: var(--danger-color);
+}
+
+.btn-outline-danger:hover {
+    background: var(--danger-color);
+    border-color: var(--danger-color);
+    color: white;
+}
+
+.btn-group .btn {
+    margin-right: 0.25rem;
+}
+
+.btn-group .btn:last-child {
+    margin-right: 0;
+}
+
+@media (max-width: 768px) {
+    .btn {
+        font-size: 0.875rem;
+        padding: 0.375rem 0.75rem;
+    }
+
+    .btn-group {
+        flex-direction: column;
+    }
+
+    .btn-group .btn {
+        margin-right: 0;
+        margin-bottom: 0.25rem;
+    }
+}
+
+/* ========== 徽章样式 ========== */
+
+.badge {
+    font-weight: 500;
+    padding: 5px 10px;
+}
+
+/* ========== 表格样式 ========== */
+
+.table {
+    margin-bottom: 0;
+    background: transparent;
+}
+
+.table th {
+    border-top: none;
+    border-bottom: 2px solid var(--border-color);
+    font-weight: 600;
+    color: var(--dark-color);
+    background: rgba(79, 70, 229, 0.05);
+    padding: 1rem;
+}
+
+.table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+
+.table tbody tr:hover {
+    background: rgba(79, 70, 229, 0.02);
+}
+
+/* 表格操作列样式 */
+.table td:last-child {
+    text-align: center;
+    vertical-align: middle;
+    padding: 0.5rem 0.25rem;
+}
+
+/* 表格文本截断优化 */
+.table td {
+    vertical-align: middle;
+}
+
+.table td[title] {
+    cursor: help;
+}
+
+/* ========== 表单样式 ========== */
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.form-control, .form-select {
+    border-radius: 10px;
+    border: 2px solid var(--border-color);
+    transition: all 0.3s ease;
+    padding: 0.75rem 1rem;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+    transform: translateY(-1px);
+}
+
+.form-label {
+    font-weight: 600;
+    color: var(--dark-color);
+    margin-bottom: 0.5rem;
+}
+
+@media (max-width: 768px) {
+    .card-body {
+        padding: 1rem;
+    }
+}
+
+/* ========== 模态框样式 ========== */
+
+.modal-content {
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    backdrop-filter: blur(10px);
+}
+
+.modal-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+    color: white;
+    border: none;
+    border-radius: 16px 16px 0 0;
+}
+
+.modal-header {
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.modal-footer {
+    border-top: 1px solid rgba(0,0,0,0.05);
+}
+
+/* ========== Toast 样式 ========== */
+
+.toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+.toast {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    backdrop-filter: blur(10px);
+}
+
+/* ========== 加载状态 ========== */
+
+.loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255,255,255,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.loading-spinner {
+    width: 3rem;
+    height: 3rem;
+}
+
+/* ========== 账号选择器 ========== */
+
+.account-selector {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.selector-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.selector-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.25rem;
+}
+
+.selector-title {
+    margin: 0;
+    color: #1f2937;
+    font-weight: 600;
+}
+
+.selector-subtitle {
+    margin: 0;
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+.account-select-wrapper {
+    position: relative;
+}
+
+.account-select {
+    width: 100%;
+    padding: 1rem 1.25rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-size: 1rem;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.account-select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* ========== 状态切换 ========== */
+
+.status-toggle {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.status-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.status-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 24px;
+}
+
+.status-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .status-slider {
+    background-color: #10b981;
+}
+
+input:checked + .status-slider:before {
+    transform: translateX(26px);
+}
+
+/* 状态徽章 */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    min-width: 2rem;
+    height: 1.5rem;
+}
+
+.status-badge.enabled {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.status-badge.disabled {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+/* 账号行禁用状态 */
+.account-row.disabled {
+    opacity: 0.6;
+    background-color: #f9fafb;
+}
+
+.account-row.disabled .cookie-value {
+    background-color: #f3f4f6;
+}
+
+/* 脉冲动画 */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.account-badge .badge.bg-warning {
+    animation: pulse 2s infinite;
+}
+
+.disabled-account-notice {
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    color: #92400e;
+}
+
+.disabled-account-notice .bi {
+    color: #f59e0b;
+}
+
+/* ========== 响应式状态切换 ========== */
+
+@media (max-width: 768px) {
+    .status-toggle {
+        width: 40px;
+        height: 20px;
+    }
+
+    .status-slider:before {
+        height: 14px;
+        width: 14px;
+        left: 3px;
+        bottom: 3px;
+    }
+
+    input:checked + .status-slider:before {
+        transform: translateX(20px);
+    }
+}

@@ -1,0 +1,378 @@
+/**
+ * Pages Styles - 页面特定样式
+ * 包含仪表盘、日志查看器、商品管理、二维码登录、通知渠道等页面样式
+ */
+
+/* ========== 仪表盘样式 ========== */
+
+.dashboard-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.stat-icon.primary {
+    background: rgba(79, 70, 229, 0.1);
+    color: var(--primary-color);
+}
+
+.stat-icon.success {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-color);
+}
+
+.stat-icon.warning {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning-color);
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--dark-color);
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    color: var(--secondary-color);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* ========== 日志管理样式 ========== */
+
+.log-container {
+    height: 70vh;
+    overflow-y: auto;
+    background-color: #1e1e1e;
+    color: #d4d4d4;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.2;
+    padding: 8px;
+    border-radius: 4px;
+}
+
+.log-entry {
+    margin-bottom: 0px;
+    padding: 1px 0;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    line-height: 1.2;
+}
+
+.log-entry.DEBUG {
+    color: #9cdcfe;
+}
+
+.log-entry.INFO {
+    color: #4ec9b0;
+}
+
+.log-entry.WARNING {
+    color: #dcdcaa;
+}
+
+.log-entry.ERROR {
+    color: #f48771;
+}
+
+.log-entry.CRITICAL {
+    color: #ff6b6b;
+    font-weight: bold;
+}
+
+.log-timestamp {
+    color: #808080;
+}
+
+.log-level {
+    font-weight: bold;
+    margin: 0 5px;
+}
+
+.log-source {
+    color: #569cd6;
+}
+
+.log-message {
+    color: inherit;
+}
+
+.log-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.log-container::-webkit-scrollbar-track {
+    background: #2d2d30;
+}
+
+.log-container::-webkit-scrollbar-thumb {
+    background: #464647;
+    border-radius: 4px;
+}
+
+.log-container::-webkit-scrollbar-thumb:hover {
+    background: #5a5a5c;
+}
+
+/* ========== 商品管理表格 ========== */
+
+#itemsTableBody .btn-group {
+    white-space: nowrap;
+}
+
+#itemsTableBody .btn-group .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    border-radius: 0.25rem;
+}
+
+#itemsTableBody .btn-group .btn:first-child {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+#itemsTableBody .btn-group .btn:last-child {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-left: 0;
+}
+
+#itemsTableBody .btn-group .btn i {
+    font-size: 0.875rem;
+}
+
+/* 商品表格特定优化 */
+#itemsTableBody td:nth-child(4),
+#itemsTableBody td:nth-child(5) {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    #itemsTableBody .btn-group {
+        flex-direction: row;
+    }
+
+    #itemsTableBody .btn-group .btn {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.75rem;
+    }
+}
+
+/* ========== 二维码登录 ========== */
+
+.qr-login-btn {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border: none;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.qr-login-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+    background: linear-gradient(135deg, #218838 0%, #1ea085 100%);
+}
+
+.qr-login-btn:active {
+    transform: translateY(0);
+}
+
+.qr-login-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.qr-login-btn:hover::before {
+    left: 100%;
+}
+
+/* 二维码容器样式 */
+.qr-code-wrapper {
+    border: 3px solid #28a745;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.2);
+    transition: all 0.3s ease;
+}
+
+.qr-code-wrapper:hover {
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.3);
+}
+
+/* 步骤指引样式 */
+.step-item {
+    text-align: center;
+}
+
+.step-number {
+    font-weight: bold;
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+/* 手动输入按钮样式 */
+.manual-input-btn {
+    transition: all 0.3s ease;
+}
+
+.manual-input-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.2);
+}
+
+/* 等待提示样式 */
+.bg-light-warning {
+    background-color: #fff3cd;
+}
+
+.qr-loading-tip {
+    animation: pulse-warning 2s infinite;
+}
+
+@keyframes pulse-warning {
+    0% {
+        opacity: 0.8;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0.8;
+    }
+}
+
+/* ========== 通知渠道卡片 ========== */
+
+.channel-type-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    min-height: 180px;
+}
+
+.channel-type-card .card-body {
+    padding: 1rem;
+}
+
+.channel-type-card .channel-icon {
+    transition: transform 0.3s ease;
+    margin-bottom: 0.75rem;
+}
+
+.channel-type-card .channel-icon i {
+    font-size: 2.2rem;
+}
+
+.channel-type-card .card-title {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+
+.channel-type-card .card-text {
+    font-size: 0.85rem;
+    margin-bottom: 0.75rem;
+}
+
+.channel-type-card .btn {
+    transition: all 0.3s ease;
+    font-size: 0.85rem;
+    padding: 0.375rem 0.75rem;
+}
+
+.channel-type-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    border-color: var(--bs-primary);
+}
+
+.channel-type-card:hover .channel-icon {
+    transform: scale(1.05);
+}
+
+.channel-type-card:hover .btn {
+    transform: scale(1.02);
+}
+
+/* 大屏幕优化 */
+@media (min-width: 1400px) {
+    .channel-type-card {
+        min-height: 200px;
+    }
+}
+
+/* ========== 响应式页面调整 ========== */
+
+@media (max-width: 768px) {
+    .qr-login-btn, .manual-input-btn {
+        margin-bottom: 10px;
+        font-size: 0.9rem;
+    }
+
+    .step-item {
+        margin-bottom: 15px;
+    }
+
+    .step-number {
+        width: 25px;
+        height: 25px;
+        font-size: 12px;
+    }
+
+    .channel-type-card {
+        margin-bottom: 10px;
+        min-height: 160px;
+    }
+
+    .channel-type-card .card-body {
+        padding: 0.75rem;
+    }
+
+    .channel-type-card .channel-icon i {
+        font-size: 2rem;
+    }
+
+    .channel-type-card .card-title {
+        font-size: 1rem;
+    }
+
+    .channel-type-card .card-text {
+        font-size: 0.8rem;
+    }
+}
