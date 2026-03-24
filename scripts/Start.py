@@ -19,7 +19,7 @@ sys.path.insert(0, str(project_root))
 from loguru import logger
 
 from configs.config import AUTO_REPLY, COOKIES_LIST
-from db_manager import db_manager
+from app.repositories import db_manager
 from scripts.file_log_collector import setup_file_logging
 
 
@@ -28,7 +28,7 @@ def _start_api_server():
     api_conf = AUTO_REPLY.get('api', {})
 
     host = os.getenv('API_HOST', '0.0.0.0')
-    port = int(os.getenv('API_PORT', '8080'))
+    port = int(os.getenv('API_PORT', '8082'))
 
     if 'host' in api_conf:
         host = api_conf['host']
@@ -36,11 +36,11 @@ def _start_api_server():
         port = api_conf['port']
 
     if 'url' in api_conf and 'host' not in api_conf and 'port' not in api_conf:
-        url = api_conf.get('url', 'http://0.0.0.0:8080/xianyu/reply')
+        url = api_conf.get('url', 'http://0.0.0.0:8082/xianyu/reply')
         parsed = urlparse(url)
         if parsed.hostname and parsed.hostname != 'localhost':
             host = parsed.hostname
-        port = parsed.port or 8080
+        port = parsed.port or 8082
 
     logger.info(f"启动Web服务器: http://{host}:{port}")
     uvicorn.run("app.api:app", host=host, port=port, log_level="info")
@@ -71,7 +71,7 @@ def load_keywords_file(path: str):
 
 def _setup_keyword_matcher_callbacks():
     """设置关键词匹配器回调函数，返回是否成功"""
-    from db_manager import db_manager
+    from app.repositories import db_manager
     from app.core.keyword_matcher import keyword_matcher
 
     try:

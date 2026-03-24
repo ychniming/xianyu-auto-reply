@@ -43,7 +43,7 @@ class ReplyProcessor:
             Optional[str]: 默认回复内容
         """
         try:
-            from db_manager import db_manager
+            from app.repositories import db_manager
 
             default_reply_settings = db_manager.get_default_reply(self.parent.cookie_id)
 
@@ -252,7 +252,7 @@ class ReplyProcessor:
             Dict[str, Any]: 用户统计信息
         """
         try:
-            from db_manager import db_manager
+            from app.repositories import db_manager
 
             if hasattr(db_manager, 'get_user_stats'):
                 stats = db_manager.get_user_stats(self.parent.cookie_id, user_id)
@@ -291,7 +291,7 @@ class ReplyProcessor:
             return {}
 
         try:
-            from db_manager import db_manager
+            from app.repositories import db_manager
 
             item_info = db_manager.get_item_info(self.parent.cookie_id, item_id)
 
@@ -318,7 +318,7 @@ class ReplyProcessor:
             int: 触发次数
         """
         try:
-            from db_manager import db_manager
+            from app.repositories import db_manager
 
             keywords = db_manager.get_keywords_with_type(self.parent.cookie_id)
 
@@ -355,7 +355,7 @@ class ReplyProcessor:
             Optional[str]: 匹配到的回复内容，或 None
         """
         try:
-            from db_manager import db_manager
+            from app.repositories import db_manager
 
             keywords = db_manager.get_keywords_with_type(self.parent.cookie_id)
 
@@ -452,7 +452,7 @@ class ReplyProcessor:
                 logger.debug(f"账号 {self.parent.cookie_id} 未启用AI回复")
                 return None
 
-            from db_manager import db_manager
+            from app.repositories import db_manager
             item_info_raw = db_manager.get_item_info(self.parent.cookie_id, item_id)
 
             if not item_info_raw:

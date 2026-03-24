@@ -345,7 +345,7 @@ class NotificationHandler:
     async def send_notification(self, send_user_name: str, send_user_id: str, send_message: str, item_id: str = None) -> None:
         """发送消息通知"""
         try:
-            from db_manager import db_manager
+            from app.repositories import db_manager
 
             # 获取当前账号的通知配置
             notifications = db_manager.get_account_notifications(self.parent.cookie_id)
@@ -438,7 +438,7 @@ class NotificationHandler:
                 logger.debug(f"通知在冷却期内，跳过发送: {notification_type} (距离上次 {int(current_time - last_time)} 秒)")
                 return
 
-            from db_manager import db_manager
+            from app.repositories import db_manager
 
             # 获取当前账号的通知配置
             notifications = db_manager.get_account_notifications(self.parent.cookie_id)
@@ -507,7 +507,7 @@ class NotificationHandler:
     async def send_delivery_failure_notification(self, send_user_name: str, send_user_id: str, item_id: str, error_message: str) -> None:
         """发送自动发货失败通知"""
         try:
-            from db_manager import db_manager
+            from app.repositories import db_manager
 
             # 获取当前账号的通知配置
             notifications = db_manager.get_account_notifications(self.parent.cookie_id)

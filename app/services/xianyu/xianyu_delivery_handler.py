@@ -139,7 +139,7 @@ class DeliveryHandler:
     async def _auto_delivery(self, item_id: str, item_title: str = None, order_id: str = None) -> Optional[str]:
         """自动发货主流程"""
         try:
-            from db_manager import db_manager
+            from app.repositories import db_manager
 
             logger.info(f"Auto delivery start: item_id={item_id}")
 
@@ -176,7 +176,7 @@ class DeliveryHandler:
     async def _save_item_info_if_needed(self, item_id: str, search_text: str, rule: Dict[str, Any]) -> None:
         """根据需要保存商品信息"""
         try:
-            from db_manager import db_manager
+            from app.repositories import db_manager
             db_item_info = db_manager.get_item_info(self.parent.cookie_id, item_id)
             if db_item_info:
                 item_title = db_item_info.get('item_title', '').strip()

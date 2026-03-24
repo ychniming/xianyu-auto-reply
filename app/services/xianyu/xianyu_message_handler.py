@@ -45,7 +45,7 @@ class MessageHandler:
     async def handle_message(self, message_data: dict, websocket) -> None:
         """处理所有类型的消息"""
         try:
-            from src import cookie_manager
+            from app.core import cookie_manager
             if cookie_manager and not cookie_manager.get_cookie_status(self.parent.cookie_id):
                 logger.debug(f"【{self.parent.cookie_id}】账号已禁用，跳过消息处理")
                 return

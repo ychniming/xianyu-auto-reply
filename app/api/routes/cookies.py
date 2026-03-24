@@ -61,7 +61,7 @@ class CookieDetails(BaseModel):
 @router.get("/cookies")
 def list_cookies(current_user: Optional[Dict[str, Any]] = Depends(get_current_user)):
     """获取当前用户的Cookie列表（公开接口）"""
-    from src import cookie_manager
+    from app.core import cookie_manager
     if cookie_manager.manager is None:
         return success(data=[])
 
@@ -76,7 +76,7 @@ def list_cookies(current_user: Optional[Dict[str, Any]] = Depends(get_current_us
 @router.get("/cookies/details")
 def get_cookies_details(current_user: Optional[Dict[str, Any]] = Depends(get_current_user)):
     """获取所有Cookie的详细信息"""
-    from src import cookie_manager
+    from app.core import cookie_manager
     if cookie_manager.manager is None:
         return success(data=[])
 
@@ -102,7 +102,7 @@ def get_cookies_details(current_user: Optional[Dict[str, Any]] = Depends(get_cur
 @router.post("/cookies")
 def add_cookie(item: CookieIn, current_user: Optional[Dict[str, Any]] = Depends(get_current_user)):
     """添加Cookie账号"""
-    from src import cookie_manager
+    from app.core import cookie_manager
     if cookie_manager.manager is None:
         raise HTTPException(status_code=500, detail="CookieManager 未就绪")
 
@@ -136,7 +136,7 @@ def add_cookie(item: CookieIn, current_user: Optional[Dict[str, Any]] = Depends(
 @router.put('/cookies/{cid}')
 def update_cookie(cid: str, item: CookieIn, current_user: Optional[Dict[str, Any]] = Depends(get_current_user)):
     """更新Cookie"""
-    from src import cookie_manager
+    from app.core import cookie_manager
     if cookie_manager.manager is None:
         raise HTTPException(status_code=500, detail='CookieManager 未就绪')
 
@@ -161,7 +161,7 @@ def update_cookie(cid: str, item: CookieIn, current_user: Optional[Dict[str, Any
 @router.put('/cookies/{cid}/status')
 def update_cookie_status(cid: str, status: CookieStatusIn, current_user: Optional[Dict[str, Any]] = Depends(get_current_user)):
     """更新Cookie启用状态"""
-    from src import cookie_manager
+    from app.core import cookie_manager
 
     try:
         user_id = current_user['user_id'] if current_user else None
@@ -221,7 +221,7 @@ def get_auto_confirm(cid: str, current_user: Optional[Dict[str, Any]] = Depends(
 @router.delete("/cookies/{cid}")
 def delete_cookie(cid: str, current_user: Optional[Dict[str, Any]] = Depends(get_current_user)):
     """删除Cookie"""
-    from src import cookie_manager
+    from app.core import cookie_manager
 
     try:
         user_id = current_user['user_id'] if current_user else None

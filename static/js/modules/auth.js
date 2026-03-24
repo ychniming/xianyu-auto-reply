@@ -299,9 +299,11 @@ export function continueAfterVerification() {
 // 处理扫码成功
 export function handleQRCodeSuccess(data) {
     if (data.account_info) {
-        const { account_id, is_new_account } = data.account_info;
+        const { account_id, is_new_account, error } = data.account_info;
 
-        if (is_new_account) {
+        if (error) {
+            showToast(`登录成功但保存失败: ${error}`, 'warning');
+        } else if (is_new_account) {
             showToast(`新账号添加成功！账号ID: ${account_id}`, 'success');
         } else {
             showToast(`账号Cookie已更新！账号ID: ${account_id}`, 'success');
@@ -310,9 +312,23 @@ export function handleQRCodeSuccess(data) {
         // 关闭模态框
         setTimeout(() => {
             const modal = bootstrap.Modal.getInstance(document.getElementById('qrCodeLoginModal'));
-            modal.hide();
+            if (modal) {
+                modal.hide();
+            }
 
             // 刷新账号列表
+            if (typeof loadCookies === 'function') {
+                loadCookies();
+            }
+        }, 2000);
+    } else {
+        // 即使没有account_info，也关闭模态框并刷新列表
+        showToast('登录成功！', 'success');
+        setTimeout(() => {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('qrCodeLoginModal'));
+            if (modal) {
+                modal.hide();
+            }
             if (typeof loadCookies === 'function') {
                 loadCookies();
             }

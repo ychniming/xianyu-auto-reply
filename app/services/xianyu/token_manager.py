@@ -142,7 +142,7 @@ class TokenManager:
     async def _update_config_cookies(self) -> None:
         """更新数据库中的 cookies"""
         try:
-            from db_manager import db_manager
+            from app.repositories import db_manager
 
             if hasattr(self.parent, 'cookie_id') and self.parent.cookie_id:
                 try:
@@ -172,7 +172,7 @@ class TokenManager:
         """Token 刷新循环"""
         while True:
             try:
-                from src import cookie_manager as cm
+                from app.core import cookie_manager as cm
                 if cm.manager and not cm.manager.get_cookie_status(self.parent.cookie_id):
                     logger.info(f"【{self.parent.cookie_id}】账号已禁用，停止 Token 刷新循环")
                     break

@@ -42,7 +42,7 @@ class ItemDBManager:
                 logger.debug(f"跳过保存商品信息：商品标题或详情不完整 - {item_id}")
                 return
 
-            from db_manager import db_manager
+            from app.repositories import db_manager
             item_data = item_detail
             success = db_manager.save_item_info(self.parent.cookie_id, item_id, item_data)
             if success:
@@ -64,7 +64,7 @@ class ItemDBManager:
             bool: 保存是否成功
         """
         try:
-            from db_manager import db_manager
+            from app.repositories import db_manager
             success = db_manager.update_item_detail(self.parent.cookie_id, item_id, item_detail)
             if success:
                 logger.info(f"商品详情已更新: {item_id}")
@@ -133,7 +133,7 @@ class ItemDBManager:
             int: 保存成功的数量
         """
         try:
-            from db_manager import db_manager
+            from app.repositories import db_manager
             from configs.config import config
 
             batch_data = []

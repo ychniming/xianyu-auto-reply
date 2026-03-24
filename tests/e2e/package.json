@@ -1,0 +1,39 @@
+{
+  "name": "xianyu-auto-reply-e2e-tests",
+  "version": "1.0.0",
+  "description": "闲鱼自动回复系统端到端测试",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug",
+    "test:chromium": "playwright test --project=chromium",
+    "test:firefox": "playwright test --project=firefox",
+    "test:webkit": "playwright test --project=webkit",
+    "test:mobile": "playwright test --project='Mobile Chrome' --project='Mobile Safari'",
+    "test:login": "playwright test specs/login.spec.ts",
+    "test:navigation": "playwright test specs/navigation.spec.ts",
+    "test:accounts": "playwright test specs/accounts.spec.ts",
+    "test:keywords": "playwright test specs/keywords.spec.ts",
+    "test:smoke": "playwright test --grep '@smoke'",
+    "test:regression": "playwright test --grep '@regression'",
+    "report": "playwright show-report playwright-report",
+    "report:html": "npx serve playwright-report",
+    "install:browsers": "playwright install",
+    "install:deps": "playwright install-deps",
+    "codegen": "playwright codegen http://localhost:8000"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@types/node": "^20.0.0"
+  },
+  "keywords": [
+    "playwright",
+    "e2e",
+    "testing",
+    "automation",
+    "xianyu"
+  ],
+  "author": "Xianyu Auto Reply Team",
+  "license": "MIT"
+}

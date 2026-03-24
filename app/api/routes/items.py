@@ -49,7 +49,7 @@ async def search_items(
 ):
     """搜索闲鱼商品"""
     try:
-        from app.utils.item_search import search_xianyu_items
+        from app.utils.xianyu_searcher import search_xianyu_items
 
         result = await search_xianyu_items(
             keyword=search_request.keyword,
@@ -77,7 +77,7 @@ async def search_multiple_pages(
 ):
     """搜索多页闲鱼商品"""
     try:
-        from app.utils.item_search import search_multiple_pages_xianyu
+        from app.utils.xianyu_searcher import search_multiple_pages_xianyu
 
         result = await search_multiple_pages_xianyu(
             keyword=search_request.keyword,
@@ -176,7 +176,7 @@ def batch_delete_items(ids: List[str], current_user: Optional[Dict[str, Any]] = 
 async def get_all_items_from_account(cookie_id: str, current_user: Optional[Dict[str, Any]] = Depends(get_current_user)):
     """从账号获取所有商品"""
     try:
-        from src import cookie_manager
+        from app.core import cookie_manager
         if cookie_manager.manager is None:
             raise HTTPException(status_code=500, detail="CookieManager未初始化")
 

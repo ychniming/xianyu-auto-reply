@@ -490,7 +490,7 @@ class XianyuLive:
         """Token刷新循环"""
         while True:
             try:
-                from src import cookie_manager as cm
+                from app.core import cookie_manager as cm
                 if cm.manager and not cm.manager.get_cookie_status(self.cookie_id):
                     logger.info(f"【{self.cookie_id}】账号已禁用，停止Token刷新循环")
                     break
@@ -706,7 +706,7 @@ class XianyuLive:
         """心跳循环"""
         while True:
             try:
-                from src import cookie_manager as cm
+                from app.core import cookie_manager as cm
                 if cm.manager and not cm.manager.get_cookie_status(self.cookie_id):
                     logger.info(f"【{self.cookie_id}】账号已禁用，停止心跳循环")
                     break
@@ -826,7 +826,7 @@ class XianyuLive:
 
     def _is_account_disabled(self) -> bool:
         """检查账号是否已禁用"""
-        from src import cookie_manager as cm
+        from app.core import cookie_manager as cm
         if cm.manager and not cm.manager.get_cookie_status(self.cookie_id):
             logger.info(f"【{self.cookie_id}】账号已禁用，停止主循环")
             return True
@@ -859,7 +859,8 @@ class XianyuLive:
             error_msg = self._safe_str(additional_error)
             if "additional_headers" not in error_msg and "unexpected keyword argument" not in error_msg:
                 logger.error(f"【{self.cookie_id}】additional_headers 失败（非参数问题）: {error_msg}")
-                raise additional_error
+                logger.info(f"【{self.cookie_id}】将在 5 秒后重试连接...")
+                return None
             logger.debug(f"【{self.cookie_id}】additional_headers 模式失败: {error_msg}")
 
         # 策略3: extra_headers（最新版本）
@@ -871,7 +872,8 @@ class XianyuLive:
             error_msg = self._safe_str(extra_error)
             if "extra_headers" not in error_msg and "unexpected keyword argument" not in error_msg:
                 logger.error(f"【{self.cookie_id}】extra_headers 失败（非参数问题）: {error_msg}")
-                raise extra_error
+                logger.info(f"【{self.cookie_id}】将在 5 秒后重试连接...")
+                return None
             logger.debug(f"【{self.cookie_id}】extra_headers 模式失败: {error_msg}")
 
         logger.error(f"【{self.cookie_id}】所有 WebSocket 连接策略均失败")

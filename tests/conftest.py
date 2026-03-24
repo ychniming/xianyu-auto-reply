@@ -13,7 +13,7 @@ def temp_db():
     """创建临时数据库"""
     fd, path = tempfile.mkstemp(suffix='.db')
     os.close(fd)
-    from db_manager import DBManager
+    from app.repositories import DBManager
     db = DBManager(path)
     yield db
     db.close()

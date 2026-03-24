@@ -74,9 +74,43 @@ class RateLimitSettings(BaseSettings):
     )
 
 
+class QRLoginSettings(BaseSettings):
+    """QR Login configuration settings."""
+
+    model_config = ConfigDict(
+        env_prefix="XIANYU_QRLOGIN_",
+        extra="ignore"
+    )
+
+    expire_time: int = Field(
+        default=600,
+        description="QR code session expire time in seconds"
+    )
+    max_sessions: int = Field(
+        default=100,
+        description="Maximum number of concurrent sessions"
+    )
+    cleanup_threshold: int = Field(
+        default=50,
+        description="Session count threshold to trigger cleanup"
+    )
+    cleanup_interval: int = Field(
+        default=300,
+        description="Auto cleanup interval in seconds"
+    )
+    poll_interval: float = Field(
+        default=0.8,
+        description="QR status poll interval in seconds"
+    )
+    lazy_cleanup_chance: float = Field(
+        default=0.1,
+        description="Probability of lazy cleanup trigger"
+    )
+
+
 class CacheSettings(BaseSettings):
     """Cache configuration settings."""
-    
+
     model_config = ConfigDict(
         env_prefix="XIANYU_",
         extra="ignore"
@@ -290,7 +324,7 @@ class AppSettings(BaseSettings):
         description="API server host"
     )
     api_port: int = Field(
-        default=8080,
+        default=8082,
         description="API server port"
     )
     enable_docs: bool = Field(
@@ -308,6 +342,7 @@ class AppSettings(BaseSettings):
     ai_reply: AIReplySettings = Field(default_factory=AIReplySettings)
     auto_reply: AutoReplySettings = Field(default_factory=AutoReplySettings)
     app_config: AppConfigSettings = Field(default_factory=AppConfigSettings)
+    qr_login: QRLoginSettings = Field(default_factory=QRLoginSettings)
 
 
 class YAMLConfig:
@@ -437,6 +472,8 @@ AUTO_REPLY = {
     'retry_interval': settings.auto_reply.auto_reply_retry_interval,
     'api': {
         'enabled': False,
+        'host': settings.api_host,
+        'port': settings.api_port,
         'url': f'http://localhost:{settings.api_port}/xianyu/reply',
         'timeout': 10
     }
@@ -497,6 +534,7 @@ __all__ = [
     'WebSocketSettings',
     'AIReplySettings',
     'AutoReplySettings',
+    'QRLoginSettings',
     # Legacy exports
     'COOKIES_STR',
     'COOKIES_LAST_UPDATE',

@@ -132,9 +132,24 @@ class CookieManager:
         except asyncio.CancelledError:
             logger.info(f"XianyuLive 任务已取消: {cookie_id}")
         except Exception as e:
+            error_msg = str(e)
             logger.error(f"XianyuLive 任务异常({cookie_id}): {e}")
             import traceback
             logger.error(f"详细错误信息: {traceback.format_exc()}")
+            
+            # 网络错误自动重试逻辑
+            network_error_keywords = ['远程计算机拒绝网络连接', 'Connection refused', '网络不可达', 'Network is unreachable', '连接超时', 'timeout']
+            if any(keyword in error_msg for keyword in network_error_keywords):
+                logger.warning(f"【{cookie_id}】检测到网络错误，将在 30 秒后自动重试...")
+                await asyncio.sleep(30)
+                # 重新启动任务
+                if cookie_id in self.cookies:
+                    logger.info(f"【{cookie_id}】正在重新启动 XianyuLive 任务...")
+                    self.tasks[cookie_id] = asyncio.create_task(
+                        self._run_xianyu(cookie_id, self.cookies[cookie_id], user_id)
+                    )
+            else:
+                logger.error(f"【{cookie_id}】非网络错误，任务已停止")
 
     async def _add_cookie_async(
         self,

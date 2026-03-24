@@ -9,7 +9,7 @@ import uuid
 from pathlib import Path
 from typing import Optional, Dict, Any
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, APIRouter, Request
+from fastapi import FastAPI, HTTPException, UploadFile, File, APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
@@ -24,6 +24,7 @@ from .middleware import setup_middleware, create_startup_handler
 from .metrics import setup_metrics, REQUEST_COUNT, REQUEST_LATENCY, ACTIVE_REQUESTS
 from .models import RequestModel, ResponseData, ResponseModel
 from .helpers import read_html_file
+from .dependencies import require_auth
 
 from .routes import auth, cookies, keywords, cards, items, settings, admin
 
@@ -41,7 +42,7 @@ def match_reply(cookie_id: str, message: str) -> Optional[str]:
     Returns:
         Optional[str]: 匹配的回复内容，未匹配返回None
     """
-    from src import cookie_manager
+    from app.core import cookie_manager
     mgr = cookie_manager.manager
     if mgr is None:
         return None
@@ -107,7 +108,9 @@ def create_app() -> FastAPI:
     setup_middleware(app)
     logger.info("Rate limiting middleware initialized: 100 requests/minute default limit")
 
-    static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static')
+    # 获取项目根目录
+    project_root = Path(__file__).parent.parent.parent
+    static_dir = str(project_root / 'static')
 
     backup_router = APIRouter(prefix="", tags=["备份"])
 
@@ -201,7 +204,7 @@ def _register_api_routes(app: FastAPI) -> None:
     async def health_check(request: Request) -> JSONResponse:
         """健康检查端点"""
         try:
-            from src import cookie_manager
+            from app.core import cookie_manager
             manager_status = "ok" if cookie_manager.manager is not None else "error"
 
             from app.repositories import db_manager
@@ -248,7 +251,7 @@ def _register_api_routes(app: FastAPI) -> None:
     async def api_health_check(request: Request) -> JSONResponse:
         """API 健康检查端点"""
         try:
-            from src import cookie_manager
+            from app.core import cookie_manager
             manager_status = "ok" if cookie_manager.manager is not None else "error"
 
             from app.repositories import db_manager
@@ -326,124 +329,180 @@ def _register_api_routes(app: FastAPI) -> None:
             logger.error(f"图片上传失败: {e}")
             return {'success': False, 'error': str(e)}
 
+    def _save_cookie_from_login(result: Dict[str, Any], user_id: int = None) -> bool:
+        """从登录结果保存Cookie（内部辅助函数）
+
+        Args:
+            result: 登录结果字典
+            user_id: 用户ID，默认为1
+
+        Returns:
+            bool: 是否成功保存Cookie
+        """
+        from app.repositories import db_manager
+        from app.core import cookie_manager
+
+        if not (result.get('status') == 'success' and result.get('cookies') and result.get('unb')):
+            return False
+
+        cookie_value = result['cookies']
+        unb = result.get('unb')
+
+        if not unb:
+            logger.error("扫码登录成功但UNB为空")
+            result['save_cookie_error'] = 'UNB为空，登录失败'
+            # 即使没有unb，也返回account_info让前端可以处理
+            result['account_info'] = {
+                'account_id': None,
+                'is_new_account': False,
+                'user_id': user_id,
+                'error': 'UNB为空'
+            }
+            return False
+
+        cookie_id = unb
+        existing = db_manager.get_cookie_by_id(cookie_id)
+
+        if user_id is None:
+            user_id = 1
+
+        try:
+            if not existing:
+                db_manager.save_cookie(cookie_id, cookie_value, user_id)
+                db_manager.save_cookie_status(cookie_id, True)
+                logger.info("扫码登录成功，已保存新Cookie")
+
+                if cookie_manager and cookie_manager.manager:
+                    cookie_manager.manager.add_cookie(cookie_id, cookie_value, user_id=user_id, save_to_db=False)
+            else:
+                db_manager.save_cookie(cookie_id, cookie_value)
+                db_manager.save_cookie_status(cookie_id, True)
+                logger.info("扫码登录成功，已更新Cookie")
+
+                if cookie_manager and cookie_manager.manager:
+                    cookie_manager.manager.update_cookie(cookie_id, cookie_value)
+
+            # 无论保存是否成功，都返回account_info给前端
+            result['account_info'] = {
+                'account_id': cookie_id,
+                'is_new_account': not existing,
+                'user_id': user_id if not existing else None
+            }
+            return True
+        except Exception as e:
+            logger.error(f"保存Cookie到数据库失败: {e}")
+            result['save_cookie_error'] = str(e)
+            # 即使保存失败，也返回account_info让前端可以处理
+            result['account_info'] = {
+                'account_id': cookie_id,
+                'is_new_account': not existing,
+                'user_id': user_id if not existing else None,
+                'error': str(e)
+            }
+            return False
+
     @app.post("/qr-login/generate")
-    async def generate_qr_code() -> Dict[str, Any]:
-        """生成扫码登录二维码"""
+    @limiter.limit("5/minute")
+    async def generate_qr_code(
+        request: Request,
+        current_user: Dict[str, Any] = Depends(require_auth)
+    ) -> Dict[str, Any]:
+        """生成扫码登录二维码（需认证）
+        
+        Args:
+            current_user: 当前登录用户
+            
+        Returns:
+            Dict包含session_id和qr_code_url
+        """
         try:
             from app.utils.qr_login import qr_login_manager
-            result = await qr_login_manager.generate_qr_code()
+            user_id = current_user.get('user_id')
+            result = await qr_login_manager.generate_qr_code(user_id=user_id)
             return result
         except Exception as e:
             logger.error(f"生成二维码失败: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
     @app.get("/qr-login/check/{session_id}")
-    async def check_qr_login(session_id: str) -> Dict[str, Any]:
-        """检查扫码登录状态"""
+    @limiter.limit("30/minute")
+    async def check_qr_login(
+        request: Request,
+        session_id: str,
+        current_user: Dict[str, Any] = Depends(require_auth)
+    ) -> Dict[str, Any]:
+        """检查扫码登录状态（需认证）
+        
+        Args:
+            request: FastAPI请求对象
+            session_id: 会话ID
+            current_user: 当前登录用户
+            
+        Returns:
+            Dict包含状态信息
+        """
         try:
             from app.utils.qr_login import qr_login_manager
-            from app.repositories import db_manager
-            from src import cookie_manager
 
-            result = await qr_login_manager.check_login(session_id)
+            user_id = current_user.get('user_id')
+            result = await qr_login_manager.check_login(session_id, user_id=user_id)
 
-            logger.info(f"检查扫码登录状态：session_id={session_id}, result={result}")
-
-            if result.get('status') == 'success' and result.get('cookies') and result.get('unb'):
+            if result.get('status') == 'success':
                 try:
-                    cookie_value = result['cookies']
-                    unb = result.get('unb')
-
-                    if not unb:
-                        logger.error(f"扫码登录成功但UNB为空，无法保存Cookie")
-                        result['save_cookie_error'] = 'UNB为空，登录失败'
-                        return result
-
-                    cookie_id = unb
-                    logger.info(f"登录成功，准备保存 Cookie: cookie_id={cookie_id}")
-
-                    existing = db_manager.get_cookie_by_id(cookie_id)
-                    if not existing:
-                        current_user_id = 1
-                        db_manager.save_cookie(cookie_id, cookie_value, current_user_id)
-                        db_manager.save_cookie_status(cookie_id, True)
-                        logger.info(f"扫码登录成功，已保存新 Cookie 到数据库：{cookie_id}")
-
-                        if cookie_manager and cookie_manager.manager:
-                            cookie_manager.manager.add_cookie(cookie_id, cookie_value, user_id=current_user_id, save_to_db=False)
-                            logger.info(f"已添加到 Cookie 管理器：{cookie_id}")
-                    else:
-                        db_manager.save_cookie(cookie_id, cookie_value)
-                        db_manager.save_cookie_status(cookie_id, True)
-                        logger.info(f"扫码登录成功，已更新现有 Cookie：{cookie_id}")
-
-                        if cookie_manager and cookie_manager.manager:
-                            cookie_manager.manager.update_cookie(cookie_id, cookie_value)
-
-                    result['account_info'] = {
-                        'account_id': cookie_id,
-                        'is_new_account': not existing,
-                        'user_id': current_user_id if not existing else None
-                    }
-                    logger.info(f"已添加 account_info: {result['account_info']}")
+                    _save_cookie_from_login(result, user_id)
                 except Exception as e:
-                    logger.error(f"保存 Cookie 失败：{e}")
-                    import traceback
-                    logger.error(f"详细错误：{traceback.format_exc()}")
+                    logger.error(f"保存Cookie失败：{e}")
                     result['save_cookie_error'] = str(e)
+                    # 确保即使保存失败也返回account_info
+                    if 'account_info' not in result:
+                        result['account_info'] = {
+                            'account_id': result.get('unb'),
+                            'is_new_account': False,
+                            'user_id': user_id,
+                            'error': str(e)
+                        }
 
-            logger.info(f"返回结果：{result}")
             return result
         except Exception as e:
             logger.error(f"检查扫码状态失败：{e}")
             raise HTTPException(status_code=500, detail=str(e))
 
     @app.post("/qr-login/recheck/{session_id}")
-    async def recheck_qr_login(session_id: str) -> Dict[str, Any]:
-        """重新检查扫码登录状态"""
+    @limiter.limit("10/minute")
+    async def recheck_qr_login(
+        request: Request,
+        session_id: str,
+        current_user: Dict[str, Any] = Depends(require_auth)
+    ) -> Dict[str, Any]:
+        """重新检查扫码登录状态（需认证）
+
+        Args:
+            session_id: 会话ID
+            current_user: 当前登录用户
+
+        Returns:
+            Dict包含状态信息
+        """
         try:
             from app.utils.qr_login import qr_login_manager
-            from app.repositories import db_manager
-            from src import cookie_manager
 
-            result = await qr_login_manager.recheck_login(session_id)
+            user_id = current_user.get('user_id')
+            result = await qr_login_manager.recheck_login(session_id, user_id=user_id)
 
-            if result.get('status') == 'success' and result.get('cookies') and result.get('unb'):
+            if result.get('status') == 'success':
                 try:
-                    cookie_value = result['cookies']
-                    unb = result.get('unb')
-
-                    if not unb:
-                        logger.error(f"重新检查：UNB为空，无法保存Cookie")
-                        result['save_cookie_error'] = 'UNB为空，登录失败'
-                        return result
-
-                    cookie_id = unb
-                    existing = db_manager.get_cookie_by_id(cookie_id)
-                    if not existing:
-                        current_user_id = 1
-                        db_manager.save_cookie(cookie_id, cookie_value, current_user_id)
-                        db_manager.save_cookie_status(cookie_id, True)
-                        logger.info(f"扫码登录成功，已保存新 Cookie 到数据库：{cookie_id}")
-
-                        if cookie_manager and cookie_manager.manager:
-                            cookie_manager.manager.add_cookie(cookie_id, cookie_value, user_id=current_user_id, save_to_db=False)
-                    else:
-                        db_manager.save_cookie(cookie_id, cookie_value)
-                        db_manager.save_cookie_status(cookie_id, True)
-                        logger.info(f"扫码登录成功，已更新现有 Cookie：{cookie_id}")
-
-                        if cookie_manager and cookie_manager.manager:
-                            cookie_manager.manager.update_cookie(cookie_id, cookie_value)
-
-                    result['account_info'] = {
-                        'account_id': cookie_id,
-                        'is_new_account': not existing,
-                        'user_id': current_user_id if not existing else None
-                    }
+                    _save_cookie_from_login(result, user_id)
                 except Exception as e:
-                    logger.error(f"保存 Cookie 失败：{e}")
+                    logger.error(f"保存Cookie失败：{e}")
                     result['save_cookie_error'] = str(e)
+                    # 确保即使保存失败也返回account_info
+                    if 'account_info' not in result:
+                        result['account_info'] = {
+                            'account_id': result.get('unb'),
+                            'is_new_account': False,
+                            'user_id': user_id,
+                            'error': str(e)
+                        }
 
             return result
         except Exception as e:

@@ -70,7 +70,7 @@ class DeliveryRules:
         Returns:
             str: 搜索文本
         """
-        from db_manager import db_manager
+        from app.repositories import db_manager
 
         try:
             db_item_info = db_manager.get_item_info(self.parent.cookie_id, item_id)
@@ -113,7 +113,7 @@ class DeliveryRules:
         Returns:
             Optional[Dict]: 匹配的规则
         """
-        from db_manager import db_manager
+        from app.repositories import db_manager
 
         delivery_rules = []
 
@@ -175,7 +175,7 @@ class DeliveryRules:
         elif card_type == 'text':
             delivery_content = rule['text_content']
         elif card_type == 'data':
-            from db_manager import db_manager
+            from app.repositories import db_manager
             delivery_content = db_manager.consume_batch_data(rule['card_id'])
         elif card_type == 'image':
             image_url = rule.get('image_url')
