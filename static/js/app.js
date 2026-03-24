@@ -21,22 +21,6 @@ import * as System from './modules/system.js';
 const DEBUG_MODE = false;
 window.DEBUG_MODE = DEBUG_MODE;
 
-// ========== 提前暴露全局函数（解决模块加载顺序问题） ==========
-// 这些函数需要在 DOM 加载前就可用，因为 HTML 中的 onclick 会直接调用
-window.showSection = function(sectionName) {
-    if (DEBUG_MODE) console.log('切换到页面:', sectionName);
-    document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
-    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-    const targetSection = document.getElementById(sectionName + '-section');
-    if (targetSection) targetSection.classList.add('active');
-    const menuLink = document.querySelector(`.nav-link[onclick="showSection('${sectionName}')"]`);
-    if (menuLink) menuLink.classList.add('active');
-};
-
-window.toggleSidebar = function() {
-    document.getElementById('sidebar').classList.toggle('collapsed');
-};
-
 // ========== 页面导航 ==========
 function showSection(sectionName) {
     if (DEBUG_MODE) console.log('切换到页面:', sectionName);
@@ -99,7 +83,7 @@ window.App = {
     Utils: Utils,
     API: API,
     Auth: Auth,
-    
+
     // 功能模块
     Dashboard: Dashboard,
     Keywords: Keywords,
@@ -110,9 +94,13 @@ window.App = {
     Delivery: Delivery,
     AI: AI,
     System: System,
-    
+
     // 全局配置
-    DEBUG_MODE: DEBUG_MODE
+    DEBUG_MODE: DEBUG_MODE,
+
+    // 展示层函数
+    showToast: API.showToast,
+    toggleLoading: API.toggleLoading
 };
 
 // ========== 向后兼容：导出常用函数到全局 ==========
@@ -126,7 +114,6 @@ window.clearKeywordCache = Utils.clearKeywordCache;
 // API 模块 - 核心请求函数
 window.fetchJSON = API.fetchJSON;
 window.toggleLoading = API.toggleLoading;
-window.showToast = API.showToast;
 window.loadCookies = Cookies.loadCookies;
 window.addCookie = API.addCookie;
 window.updateCookie = API.updateCookie;

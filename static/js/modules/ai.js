@@ -1,6 +1,6 @@
 // AI回复模块 - AI回复配置相关函数
 import { apiBase, authToken, aiSettings } from './utils.js';
-import { showToast, toggleLoading, saveAIReplyConfigAPI, testAIReplyAPI, saveDefaultReplyAPI, getDefaultRepliesAPI, updateDefaultReplyAPI } from './api.js';
+import { saveAIReplyConfigAPI, testAIReplyAPI, saveDefaultReplyAPI, getDefaultRepliesAPI, updateDefaultReplyAPI } from './api.js';
 
 // 切换AI回复设置面板显示
 export function toggleAIReplySettings() {
@@ -414,3 +414,5 @@ export function configAIReply(accountId) {
 
     showToast(`已切换到AI回复配置页面，账号 "${accountId}" 已选中`, 'info');
 }
+
+

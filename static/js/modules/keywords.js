@@ -1,23 +1,6 @@
 // 关键词管理模块 - 关键词管理相关函数
-import { apiBase, authToken, keywordsData, currentCookieId, clearKeywordCache } from './utils.js';
-import { showToast, toggleLoading, fetchJSON } from './api.js';
-
-// XSS防护：HTML转义函数
-function escapeHtml(text) {
-    if (text === null || text === undefined) {
-        return '';
-    }
-    const str = String(text);
-    const htmlEntities = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#x27;',
-        '/': '&#x2F;'
-    };
-    return str.replace(/[&<>"'/]/g, char => htmlEntities[char]);
-}
+import { apiBase, authToken, keywordsData, currentCookieId, clearKeywordCache, escapeHtml, loadItemsList } from './utils.js';
+import { fetchJSON } from './api.js';
 
 // 获取账号关键词数量（带缓存）
 export async function getAccountKeywordCount(accountId) {
@@ -29,22 +12,14 @@ export async function getAccountKeywordCount(accountId) {
     }
 
     try {
-        const response = await fetch(`${apiBase}/keywords/${accountId}`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
+        const keywordsData = await window.API.keywords.list(accountId);
+        const count = Array.isArray(keywordsData) ? keywordsData.length : 0;
 
-        if (response.ok) {
-            const keywordsData = await response.json();
-            const count = keywordsData.length;
-
-            // 更新缓存
-            if (!window.accountKeywordCache) {
-                window.accountKeywordCache = {};
-            }
-            window.accountKeywordCache[accountId] = count;
-            window.cacheTimestamp = now;
+        if (!window.accountKeywordCache) {
+            window.accountKeywordCache = {};
+        }
+        window.accountKeywordCache[accountId] = count;
+        window.cacheTimestamp = now;
 
             return count;
         } else {
@@ -62,34 +37,19 @@ export async function refreshAccountList() {
         toggleLoading(true);
 
         // 获取账号列表
-        const response = await fetch(`${apiBase}/cookies/details`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
+        const accounts = await window.API.cookies.list();
+        const select = document.getElementById('accountSelect');
+        select.innerHTML = '<option value="">🔍 请选择一个账号开始配置...</option>';
 
-        if (response.ok) {
-            const accounts = await response.json();
-            const select = document.getElementById('accountSelect');
-            select.innerHTML = '<option value="">🔍 请选择一个账号开始配置...</option>';
-
-            // 为每个账号获取关键词数量
-            const accountsWithKeywords = await Promise.all(
-                accounts.map(async (account) => {
-                    try {
-                        const keywordsResponse = await fetch(`${apiBase}/keywords/${account.id}`, {
-                            headers: {
-                                'Authorization': `Bearer ${authToken}`
-                            }
-                        });
-
-                        if (keywordsResponse.ok) {
-                            const keywordsData = await keywordsResponse.json();
-                            return {
-                                ...account,
-                                keywords: keywordsData,
-                                keywordCount: keywordsData.length
-                            };
+        const accountsWithKeywords = await Promise.all(
+            accounts.map(async (account) => {
+                try {
+                    const keywordsData = await window.API.keywords.list(account.id);
+                    return {
+                        ...account,
+                        keywords: keywordsData,
+                        keywordCount: Array.isArray(keywordsData) ? keywordsData.length : 0
+                    };
                         } else {
                             return {
                                 ...account,
@@ -196,80 +156,22 @@ export async function loadAccountKeywords() {
         toggleLoading(true);
         currentCookieId = accountId;
 
-        // 获取账号详情以检查状态
-        const accountResponse = await fetch(`${apiBase}/cookies/details`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
+        const accounts = await window.API.cookies.list();
+        const currentAccount = accounts.find(acc => acc.id === accountId);
+        const accountStatus = currentAccount ? (currentAccount.enabled === undefined ? true : currentAccount.enabled) : true;
 
-        let accountStatus = true;
-        if (accountResponse.ok) {
-            const accounts = await accountResponse.json();
-            const currentAccount = accounts.find(acc => acc.id === accountId);
-            accountStatus = currentAccount ? (currentAccount.enabled === undefined ? true : currentAccount.enabled) : true;
-        }
+        const formattedData = await window.API.keywords.listWithItemId(accountId);
+        keywordsData[accountId] = formattedData;
+        renderKeywordsList(formattedData);
 
-        const response = await fetch(`${apiBase}/keywords-with-item-id/${accountId}`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            const formattedData = data;
-            keywordsData[accountId] = formattedData;
-            renderKeywordsList(formattedData);
-
-            // 加载商品列表
-            await loadItemsList(accountId);
-
-            // 更新账号徽章显示
-            updateAccountBadge(accountId, accountStatus);
-
-            keywordManagement.style.display = 'block';
-        } else {
-            showToast('加载关键词失败', 'danger');
-        }
+        await loadItemsList(accountId, 'newItemIdSelect', '选择商品或留空表示通用关键词');
+        updateAccountBadge(accountId, accountStatus);
+        keywordManagement.style.display = 'block';
     } catch (error) {
         console.error('加载关键词失败:', error);
         showToast('加载关键词失败', 'danger');
     } finally {
         toggleLoading(false);
-    }
-}
-
-// 加载商品列表
-export async function loadItemsList(accountId) {
-    try {
-        const response = await fetch(`${apiBase}/items/${accountId}`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            const items = data.items || [];
-
-            // 更新商品选择下拉框
-            const selectElement = document.getElementById('newItemIdSelect');
-            if (selectElement) {
-                selectElement.innerHTML = '<option value="">选择商品或留空表示通用关键词</option>';
-
-                items.forEach(item => {
-                    const option = document.createElement('option');
-                    option.value = item.item_id;
-                    option.textContent = `${item.item_id} - ${item.item_title}`;
-                    selectElement.appendChild(option);
-                });
-            }
-        } else {
-            console.warn('加载商品列表失败:', response.status);
-        }
-    } catch (error) {
-        console.error('加载商品列表时发生错误:', error);
     }
 }
 
@@ -471,76 +373,155 @@ export function fillAdvancedConditions(conditionsData) {
     icon.classList.add('bi-chevron-up');
 }
 
-// 添加或更新关键词
-export async function addKeyword() {
-    const keyword = document.getElementById('newKeyword').value.trim();
-    const reply = document.getElementById('newReply').value.trim();
-    const itemId = document.getElementById('newItemIdSelect').value.trim();
-    const matchType = document.getElementById('newMatchType').value;
-    const priority = parseInt(document.getElementById('newPriority').value) || 50;
-    const replyMode = document.getElementById('newReplyMode').value;
-    const multiReplies = document.getElementById('newMultiReplies').value.trim();
-
+// 验证关键词输入
+function validateKeywordInput(keyword, reply, replyMode, multiReplies) {
     if (!keyword) {
         showToast('请填写关键词', 'warning');
-        return;
-    }
-
-    // 验证回复内容
-    let replies = [];
-    if (replyMode === 'single') {
-        if (!reply) {
-            showToast('请填写回复内容', 'warning');
-            return;
-        }
-        replies = [reply];
-    } else {
-        // 多回复模式
-        if (!multiReplies) {
-            showToast('请填写多回复配置（每行一条）', 'warning');
-            return;
-        }
-        replies = multiReplies.split('\n').map(r => r.trim()).filter(r => r);
-        if (replies.length === 0) {
-            showToast('请至少填写一条回复内容', 'warning');
-            return;
-        }
+        return { valid: false, error: 'keyword' };
     }
 
     if (!currentCookieId) {
         showToast('请先选择账号', 'warning');
+        return { valid: false, error: 'account' };
+    }
+
+    if (replyMode === 'single') {
+        if (!reply) {
+            showToast('请填写回复内容', 'warning');
+            return { valid: false, error: 'reply' };
+        }
+    } else {
+        if (!multiReplies) {
+            showToast('请填写多回复配置（每行一条）', 'warning');
+            return { valid: false, error: 'multiReplies' };
+        }
+        const replies = multiReplies.split('\n').map(r => r.trim()).filter(r => r);
+        if (replies.length === 0) {
+            showToast('请至少填写一条回复内容', 'warning');
+            return { valid: false, error: 'multiReplies' };
+        }
+    }
+
+    return { valid: true };
+}
+
+// 收集关键词表单数据
+function collectKeywordFormData() {
+    return {
+        keyword: document.getElementById('newKeyword').value.trim(),
+        reply: document.getElementById('newReply').value.trim(),
+        itemId: document.getElementById('newItemIdSelect').value.trim(),
+        matchType: document.getElementById('newMatchType').value,
+        priority: parseInt(document.getElementById('newPriority').value) || 50,
+        replyMode: document.getElementById('newReplyMode').value,
+        multiReplies: document.getElementById('newMultiReplies').value.trim()
+    };
+}
+
+// 检查关键词是否已存在
+function checkKeywordExists(keywordsToSave, keyword, itemId) {
+    return keywordsToSave.find(item =>
+        item.keyword === keyword &&
+        (item.item_id || '') === (itemId || '')
+    );
+}
+
+// 检查是否为编辑模式
+function isEditMode() {
+    return typeof window.editingIndex !== 'undefined' && window.editingIndex !== null;
+}
+
+// 重置关键词表单
+function resetKeywordForm() {
+    document.getElementById('newKeyword').value = '';
+    document.getElementById('newReply').value = '';
+    const selectElement = document.getElementById('newItemIdSelect');
+    if (selectElement) selectElement.value = '';
+    const matchTypeSelect = document.getElementById('newMatchType');
+    if (matchTypeSelect) matchTypeSelect.value = 'contains';
+    const priorityInput = document.getElementById('newPriority');
+    if (priorityInput) priorityInput.value = '50';
+    const replyModeSelect = document.getElementById('newReplyMode');
+    if (replyModeSelect) replyModeSelect.value = 'single';
+    const multiRepliesInput = document.getElementById('newMultiReplies');
+    if (multiRepliesInput) multiRepliesInput.value = '';
+
+    document.getElementById('multiReplyField').style.display = 'none';
+    clearAdvancedConditions();
+
+    const keywordInput = document.getElementById('newKeyword');
+    const replyInput = document.getElementById('newReply');
+    keywordInput.style.borderColor = '#e5e7eb';
+    replyInput.style.borderColor = '#e5e7eb';
+
+    const addBtn = document.querySelector('.add-btn');
+    addBtn.style.opacity = '0.7';
+    addBtn.style.transform = 'scale(0.95)';
+}
+
+// 更新按钮为编辑模式样式
+function updateButtonForEditMode() {
+    const addBtn = document.querySelector('.add-btn');
+    addBtn.innerHTML = '<i class="bi bi-check-lg"></i>更新';
+    addBtn.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+
+    if (!document.getElementById('cancelEditBtn')) {
+        const cancelBtn = document.createElement('button');
+        cancelBtn.id = 'cancelEditBtn';
+        cancelBtn.className = 'btn btn-outline-secondary';
+        cancelBtn.style.marginLeft = '0.5rem';
+        cancelBtn.innerHTML = '<i class="bi bi-x-lg"></i>取消';
+        cancelBtn.onclick = cancelEdit;
+        addBtn.parentNode.appendChild(cancelBtn);
+    }
+}
+
+// 更新按钮为添加模式样式
+function updateButtonForAddMode() {
+    const addBtn = document.querySelector('.add-btn');
+    addBtn.innerHTML = '<i class="bi bi-plus-lg"></i>添加';
+    addBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) {
+        cancelBtn.remove();
+    }
+}
+
+// 清除编辑状态
+function clearEditState() {
+    delete window.editingIndex;
+    delete window.originalKeyword;
+    delete window.originalItemId;
+}
+
+// 处理编辑模式的关键词移除
+function prepareKeywordsForEdit(keywordsToSave) {
+    if (isEditMode()) {
+        keywordsToSave.splice(window.editingIndex, 1);
+    }
+    return keywordsToSave;
+}
+
+// 添加或更新关键词
+export async function addKeyword() {
+    const { keyword, reply, itemId, matchType, priority, replyMode, multiReplies } = collectKeywordFormData();
+
+    const validation = validateKeywordInput(keyword, reply, replyMode, multiReplies);
+    if (!validation.valid) {
         return;
     }
 
-    // 验证优先级范围
-    if (priority < 0 || priority > 100) {
-        showToast('优先级必须在 0-100 之间', 'warning');
-        return;
-    }
-
-    // 检查是否为编辑模式
-    const isEditMode = typeof window.editingIndex !== 'undefined';
-    const actionText = isEditMode ? '更新' : '添加';
+    const isEdit = isEditMode();
+    const actionText = isEdit ? '更新' : '添加';
 
     try {
         toggleLoading(true);
 
-        // 获取当前关键词列表
         let currentKeywords = [...(keywordsData[currentCookieId] || [])];
+        let keywordsToSave = prepareKeywordsForEdit([...currentKeywords]);
 
-        // 准备要保存的关键词列表
-        let keywordsToSave = [...currentKeywords];
-
-        // 如果是编辑模式，先移除原关键词
-        if (isEditMode && typeof window.editingIndex !== 'undefined') {
-            keywordsToSave.splice(window.editingIndex, 1);
-        }
-
-        // 检查关键词是否已存在（考虑商品ID）
-        const existingKeyword = keywordsToSave.find(item =>
-            item.keyword === keyword &&
-            (item.item_id || '') === (itemId || '')
-        );
+        const existingKeyword = checkKeywordExists(keywordsToSave, keyword, itemId);
         if (existingKeyword) {
             const itemIdText = itemId ? `（商品ID: ${itemId}）` : '（通用关键词）';
             showToast(`关键词 "${keyword}" ${itemIdText} 已存在，请使用其他关键词或商品ID`, 'warning');
@@ -548,10 +529,9 @@ export async function addKeyword() {
             return;
         }
 
-        // 收集高级条件数据
+        const replies = replyMode === 'single' ? [reply] : multiReplies.split('\n').map(r => r.trim()).filter(r => r);
         const advancedConditions = collectAdvancedConditions();
-        
-        // 添加新关键词或更新的关键词
+
         const newKeyword = {
             keyword: keyword,
             reply: replyMode === 'single' ? reply : replies[0],
@@ -559,84 +539,27 @@ export async function addKeyword() {
             match_type: matchType,
             priority: priority,
             reply_mode: replyMode,
-            // 将 replies 数组转换为 JSON 字符串，与后端格式匹配
             replies: (replyMode !== 'single' && replies.length > 1) ? JSON.stringify(replies) : null,
-            // 添加高级条件
             conditions: advancedConditions
         };
-        keywordsToSave.push(newKeyword);
 
-        const response = await fetch(`${apiBase}/keywords-with-item-id/${currentCookieId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
-            },
-            body: JSON.stringify({
-                keywords: keywordsToSave
-            })
-        });
+        await window.API.keywords.create(currentCookieId, keyword, replyMode === 'single' ? reply : replies[0], itemId || '');
 
-        if (response.ok) {
-            showToast(`✨ 关键词 "${keyword}" ${actionText}成功！`, 'success');
+        showToast(`✨ 关键词 "${keyword}" ${actionText}成功！`, 'success');
 
-            // 清空输入框并重置样式
-            const keywordInput = document.getElementById('newKeyword');
-            const replyInput = document.getElementById('newReply');
-            const selectElement = document.getElementById('newItemIdSelect');
-            const matchTypeSelect = document.getElementById('newMatchType');
-            const priorityInput = document.getElementById('newPriority');
-            const replyModeSelect = document.getElementById('newReplyMode');
-            const multiRepliesInput = document.getElementById('newMultiReplies');
-            const addBtn = document.querySelector('.add-btn');
+        resetKeywordForm();
 
-            keywordInput.value = '';
-            replyInput.value = '';
-            if (selectElement) selectElement.value = '';
-            if (matchTypeSelect) matchTypeSelect.value = 'contains';
-            if (priorityInput) priorityInput.value = '50';
-            if (replyModeSelect) replyModeSelect.value = 'single';
-            if (multiRepliesInput) multiRepliesInput.value = '';
-            
-            // 隐藏多回复字段
-            document.getElementById('multiReplyField').style.display = 'none';
-            
-            // 清空高级条件
-            clearAdvancedConditions();
-            
-            keywordInput.style.borderColor = '#e5e7eb';
-            replyInput.style.borderColor = '#e5e7eb';
-            addBtn.style.opacity = '0.7';
-            addBtn.style.transform = 'scale(0.95)';
-
-            // 如果是编辑模式，重置编辑状态
-            if (isEditMode) {
-                delete window.editingIndex;
-                delete window.originalKeyword;
-
-                // 恢复添加按钮
-                addBtn.innerHTML = '<i class="bi bi-plus-lg"></i>添加';
-                addBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-
-                // 移除取消按钮
-                const cancelBtn = document.getElementById('cancelEditBtn');
-                if (cancelBtn) {
-                    cancelBtn.remove();
-                }
-            }
-
-            // 聚焦到关键词输入框，方便连续添加
-            setTimeout(() => {
-                keywordInput.focus();
-            }, 100);
-
-            loadAccountKeywords(); // 重新加载关键词列表
-            clearKeywordCache(); // 清除缓存
-        } else {
-            const errorText = await response.text();
-            console.error('关键词添加失败:', errorText);
-            showToast('关键词添加失败', 'danger');
+        if (isEdit) {
+            clearEditState();
+            updateButtonForAddMode();
         }
+
+        setTimeout(() => {
+            document.getElementById('newKeyword').focus();
+        }, 100);
+
+        loadAccountKeywords();
+        clearKeywordCache();
     } catch (error) {
         console.error('添加关键词失败:', error);
         showToast('添加关键词失败', 'danger');
@@ -645,10 +568,161 @@ export async function addKeyword() {
     }
 }
 
-// 渲染现代化关键词列表
-export function renderKeywordsList(keywords) {
-    const container = document.getElementById('keywordsList');
+// 渲染关键词徽章信息
+function renderKeywordBadges(item) {
+    const matchType = item.match_type || 'contains';
+    const matchTypeName = MATCH_TYPE_NAMES[matchType] || '包含匹配';
+    const matchTypeBadge = `<span class="keyword-match-type-badge match-type-${escapeHtml(matchType)}">${escapeHtml(matchTypeName)}</span>`;
 
+    const priority = item.priority !== undefined ? item.priority : 50;
+    const priorityClass = priority >= 80 ? 'priority-high' : (priority >= 50 ? 'priority-medium' : 'priority-low');
+    const priorityBadge = `<span class="keyword-priority-badge ${priorityClass}">优先级: ${escapeHtml(priority)}</span>`;
+
+    const replyMode = item.reply_mode || 'single';
+    const replyModeName = REPLY_MODE_NAMES[replyMode] || '单条回复';
+    const replyModeBadge = replyMode !== 'single' ?
+        `<span class="keyword-reply-mode-badge reply-mode-${escapeHtml(replyMode)}">${escapeHtml(replyModeName)}</span>` : '';
+
+    const triggerCount = item.trigger_count || 0;
+    const triggerCountBadge = triggerCount > 0 ?
+        `<span class="keyword-trigger-badge"><i class="bi bi-lightning"></i> ${escapeHtml(triggerCount)}次</span>` : '';
+
+    return { matchTypeBadge, priorityBadge, replyModeBadge, triggerCountBadge, matchType, replyMode };
+}
+
+// 渲染高级条件显示
+function renderKeywordConditions(item) {
+    if (!item.conditions || !item.conditions.conditions || item.conditions.conditions.length === 0) {
+        return '';
+    }
+
+    const conditionBadges = [];
+    item.conditions.conditions.forEach(condition => {
+        switch (condition.type) {
+            case 'time':
+                if (condition.field === 'hour' && condition.operator === 'between') {
+                    conditionBadges.push(`<span class="condition-badge condition-time"><i class="bi bi-clock"></i> ${escapeHtml(condition.value[0])}:00-${escapeHtml(condition.value[1])}:00</span>`);
+                }
+                break;
+            case 'keyword':
+                if (condition.field === 'exclude' && condition.operator === 'contains') {
+                    const excludeText = condition.value.slice(0, 2).join(', ') + (condition.value.length > 2 ? '...' : '');
+                    conditionBadges.push(`<span class="condition-badge condition-exclude"><i class="bi bi-x-circle"></i> 排除: ${escapeHtml(excludeText)}</span>`);
+                }
+                break;
+            case 'trigger':
+                if (condition.field === 'count' && condition.operator === 'lte') {
+                    conditionBadges.push(`<span class="condition-badge condition-limit"><i class="bi bi-hash"></i> 最多${escapeHtml(condition.value)}次</span>`);
+                }
+                break;
+            case 'user':
+                if (condition.field === 'is_new' && condition.operator === 'eq') {
+                    const userTypeText = condition.value ? '仅新用户' : '仅老用户';
+                    conditionBadges.push(`<span class="condition-badge condition-user"><i class="bi bi-people"></i> ${escapeHtml(userTypeText)}</span>`);
+                }
+                break;
+        }
+    });
+
+    if (conditionBadges.length > 0) {
+        return `<div class="keyword-conditions">${conditionBadges.join('')}</div>`;
+    }
+    return '';
+}
+
+// 渲染商品ID显示
+function renderItemIdDisplay(item) {
+    return item.item_id ?
+        `<small class="text-muted d-block"><i class="bi bi-box"></i> 商品ID: ${escapeHtml(item.item_id)}</small>` :
+        '<small class="text-muted d-block"><i class="bi bi-globe"></i> 通用关键词</small>';
+}
+
+// 渲染关键词内容
+function renderKeywordContent(item, replyMode, isImageType) {
+    if (isImageType) {
+        const imageUrl = item.reply || item.image_url || '';
+        return imageUrl ?
+            `<div class="d-flex align-items-center gap-3">
+                <img src="${escapeHtml(imageUrl)}" alt="关键词图片" class="keyword-image-preview" onclick="showImageModal('${escapeHtml(imageUrl)}')">
+                <div class="flex-grow-1">
+                    <p class="reply-text mb-0">用户发送关键词时将回复此图片</p>
+                    <small class="text-muted">点击图片查看大图</small>
+                </div>
+            </div>` :
+            '<p class="reply-text text-muted">图片加载失败</p>';
+    }
+
+    const replies = item.replies || [item.reply];
+    if (replyMode !== 'single' && replies.length > 1) {
+        const replyModeName = REPLY_MODE_NAMES[replyMode] || '单条回复';
+        return `
+            <div class="multi-replies-container">
+                <div class="multi-replies-header">
+                    <i class="bi bi-chat-square-text"></i>
+                    <span>共 ${escapeHtml(replies.length)} 条回复（${escapeHtml(replyModeName)}）</span>
+                </div>
+                <div class="multi-replies-list">
+                    ${replies.map((r, i) => `<div class="multi-reply-item"><span class="reply-index">${escapeHtml(i + 1)}</span>${escapeHtml(r)}</div>`).join('')}
+                </div>
+            </div>
+        `;
+    }
+    return `<p class="reply-text">${escapeHtml(item.reply || '')}</p>`;
+}
+
+// 渲染单行关键词
+function renderKeywordRow(item, index) {
+    const keywordItem = document.createElement('div');
+    keywordItem.className = 'keyword-item';
+
+    const keywordType = item.type || 'text';
+    const isImageType = keywordType === 'image';
+
+    const typeBadge = isImageType ?
+        '<span class="keyword-type-badge keyword-type-image"><i class="bi bi-image"></i> 图片</span>' :
+        '<span class="keyword-type-badge keyword-type-text"><i class="bi bi-chat-text"></i> 文本</span>';
+
+    const { matchTypeBadge, priorityBadge, replyModeBadge, triggerCountBadge, matchType, replyMode } = renderKeywordBadges(item);
+    const conditionsDisplay = renderKeywordConditions(item);
+    const itemIdDisplay = renderItemIdDisplay(item);
+    const contentDisplay = renderKeywordContent(item, replyMode, isImageType);
+
+    keywordItem.innerHTML = `
+        <div class="keyword-item-header">
+        <div class="keyword-tag">
+            <i class="bi bi-tag-fill"></i>
+            ${escapeHtml(item.keyword)}
+            ${typeBadge}
+        </div>
+        <div class="keyword-actions">
+            <button class="action-btn edit-btn ${isImageType ? 'edit-btn-disabled' : ''}" onclick="${isImageType ? 'editImageKeyword' : 'editKeyword'}(${escapeHtml(index)})" title="${isImageType ? '图片关键词不支持编辑' : '编辑'}">
+            <i class="bi bi-pencil"></i>
+            </button>
+            <button class="action-btn delete-btn" onclick="deleteKeyword('${escapeHtml(currentCookieId)}', ${escapeHtml(index)})" title="删除">
+            <i class="bi bi-trash"></i>
+            </button>
+        </div>
+        </div>
+        <div class="keyword-meta-info">
+            ${itemIdDisplay}
+            <div class="keyword-badges">
+                ${matchTypeBadge}
+                ${priorityBadge}
+                ${replyModeBadge}
+                ${triggerCountBadge}
+            </div>
+            ${conditionsDisplay}
+        </div>
+        <div class="keyword-content">
+        ${contentDisplay}
+        </div>
+    `;
+    return keywordItem;
+}
+
+// 渲染关键词表格主体
+function renderKeywordsTable(keywords) {
+    const container = document.getElementById('keywordsList');
     if (!container) {
         return;
     }
@@ -670,144 +744,14 @@ export function renderKeywordsList(keywords) {
     }
 
     keywords.forEach((item, index) => {
-        const keywordItem = document.createElement('div');
-        keywordItem.className = 'keyword-item';
-
-        // 判断关键词类型
-        const keywordType = item.type || 'text';
-        const isImageType = keywordType === 'image';
-
-        // 类型标识
-        const typeBadge = isImageType ?
-            '<span class="keyword-type-badge keyword-type-image"><i class="bi bi-image"></i> 图片</span>' :
-            '<span class="keyword-type-badge keyword-type-text"><i class="bi bi-chat-text"></i> 文本</span>';
-
-        // 匹配类型标签
-        const matchType = item.match_type || 'contains';
-        const matchTypeName = MATCH_TYPE_NAMES[matchType] || '包含匹配';
-        const matchTypeBadge = `<span class="keyword-match-type-badge match-type-${escapeHtml(matchType)}">${escapeHtml(matchTypeName)}</span>`;
-
-        // 优先级标签
-        const priority = item.priority !== undefined ? item.priority : 50;
-        const priorityClass = priority >= 80 ? 'priority-high' : (priority >= 50 ? 'priority-medium' : 'priority-low');
-        const priorityBadge = `<span class="keyword-priority-badge ${priorityClass}">优先级: ${escapeHtml(priority)}</span>`;
-
-        // 回复模式标签
-        const replyMode = item.reply_mode || 'single';
-        const replyModeName = REPLY_MODE_NAMES[replyMode] || '单条回复';
-        const replyModeBadge = replyMode !== 'single' ? 
-            `<span class="keyword-reply-mode-badge reply-mode-${escapeHtml(replyMode)}">${escapeHtml(replyModeName)}</span>` : '';
-
-        // 触发次数
-        const triggerCount = item.trigger_count || 0;
-        const triggerCountBadge = triggerCount > 0 ? 
-            `<span class="keyword-trigger-badge"><i class="bi bi-lightning"></i> ${escapeHtml(triggerCount)}次</span>` : '';
-
-        // 高级条件显示
-        let conditionsDisplay = '';
-        if (item.conditions && item.conditions.conditions && item.conditions.conditions.length > 0) {
-            const conditionBadges = [];
-            item.conditions.conditions.forEach(condition => {
-                switch (condition.type) {
-                    case 'time':
-                        if (condition.field === 'hour' && condition.operator === 'between') {
-                            conditionBadges.push(`<span class="condition-badge condition-time"><i class="bi bi-clock"></i> ${escapeHtml(condition.value[0])}:00-${escapeHtml(condition.value[1])}:00</span>`);
-                        }
-                        break;
-                    case 'keyword':
-                        if (condition.field === 'exclude' && condition.operator === 'contains') {
-                            const excludeText = condition.value.slice(0, 2).join(', ') + (condition.value.length > 2 ? '...' : '');
-                            conditionBadges.push(`<span class="condition-badge condition-exclude"><i class="bi bi-x-circle"></i> 排除: ${escapeHtml(excludeText)}</span>`);
-                        }
-                        break;
-                    case 'trigger':
-                        if (condition.field === 'count' && condition.operator === 'lte') {
-                            conditionBadges.push(`<span class="condition-badge condition-limit"><i class="bi bi-hash"></i> 最多${escapeHtml(condition.value)}次</span>`);
-                        }
-                        break;
-                    case 'user':
-                        if (condition.field === 'is_new' && condition.operator === 'eq') {
-                            const userTypeText = condition.value ? '仅新用户' : '仅老用户';
-                            conditionBadges.push(`<span class="condition-badge condition-user"><i class="bi bi-people"></i> ${escapeHtml(userTypeText)}</span>`);
-                        }
-                        break;
-                }
-            });
-            if (conditionBadges.length > 0) {
-                conditionsDisplay = `<div class="keyword-conditions">${conditionBadges.join('')}</div>`;
-            }
-        }
-
-        // 商品ID显示（转义）
-        const itemIdDisplay = item.item_id ?
-            `<small class="text-muted d-block"><i class="bi bi-box"></i> 商品ID: ${escapeHtml(item.item_id)}</small>` :
-            '<small class="text-muted d-block"><i class="bi bi-globe"></i> 通用关键词</small>';
-
-        // 内容显示
-        let contentDisplay = '';
-        if (isImageType) {
-            const imageUrl = item.reply || item.image_url || '';
-            contentDisplay = imageUrl ?
-                `<div class="d-flex align-items-center gap-3">
-                    <img src="${escapeHtml(imageUrl)}" alt="关键词图片" class="keyword-image-preview" onclick="showImageModal('${escapeHtml(imageUrl)}')">
-                    <div class="flex-grow-1">
-                        <p class="reply-text mb-0">用户发送关键词时将回复此图片</p>
-                        <small class="text-muted">点击图片查看大图</small>
-                    </div>
-                </div>` :
-                '<p class="reply-text text-muted">图片加载失败</p>';
-        } else {
-            // 多回复显示（转义每条回复）
-            const replies = item.replies || [item.reply];
-            if (replyMode !== 'single' && replies.length > 1) {
-                contentDisplay = `
-                    <div class="multi-replies-container">
-                        <div class="multi-replies-header">
-                            <i class="bi bi-chat-square-text"></i>
-                            <span>共 ${escapeHtml(replies.length)} 条回复（${escapeHtml(replyModeName)}）</span>
-                        </div>
-                        <div class="multi-replies-list">
-                            ${replies.map((r, i) => `<div class="multi-reply-item"><span class="reply-index">${escapeHtml(i + 1)}</span>${escapeHtml(r)}</div>`).join('')}
-                        </div>
-                    </div>
-                `;
-            } else {
-                contentDisplay = `<p class="reply-text">${escapeHtml(item.reply || '')}</p>`;
-            }
-        }
-
-        keywordItem.innerHTML = `
-            <div class="keyword-item-header">
-            <div class="keyword-tag">
-                <i class="bi bi-tag-fill"></i>
-                ${escapeHtml(item.keyword)}
-                ${typeBadge}
-            </div>
-            <div class="keyword-actions">
-                <button class="action-btn edit-btn ${isImageType ? 'edit-btn-disabled' : ''}" onclick="${isImageType ? 'editImageKeyword' : 'editKeyword'}(${escapeHtml(index)})" title="${isImageType ? '图片关键词不支持编辑' : '编辑'}">
-                <i class="bi bi-pencil"></i>
-                </button>
-                <button class="action-btn delete-btn" onclick="deleteKeyword('${escapeHtml(currentCookieId)}', ${escapeHtml(index)})" title="删除">
-                <i class="bi bi-trash"></i>
-                </button>
-            </div>
-            </div>
-            <div class="keyword-meta-info">
-                ${itemIdDisplay}
-                <div class="keyword-badges">
-                    ${matchTypeBadge}
-                    ${priorityBadge}
-                    ${replyModeBadge}
-                    ${triggerCountBadge}
-                </div>
-                ${conditionsDisplay}
-            </div>
-            <div class="keyword-content">
-            ${contentDisplay}
-            </div>
-        `;
+        const keywordItem = renderKeywordRow(item, index);
         container.appendChild(keywordItem);
     });
+}
+
+// 渲染现代化关键词列表
+export function renderKeywordsList(keywords) {
+    renderKeywordsTable(keywords);
 }
 
 // 聚焦到关键词输入框
@@ -1158,34 +1102,7 @@ export function showAddImageKeywordModal() {
 
 // 为图片关键词模态框加载商品列表
 export async function loadItemsListForImageKeyword() {
-    try {
-        const response = await fetch(`${apiBase}/items/${currentCookieId}`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            const items = data.items || [];
-
-            const selectElement = document.getElementById('imageItemIdSelect');
-            if (selectElement) {
-                selectElement.innerHTML = '<option value="">选择商品或留空表示通用关键词</option>';
-
-                items.forEach(item => {
-                    const option = document.createElement('option');
-                    option.value = item.item_id;
-                    option.textContent = `${item.item_id} - ${item.item_title}`;
-                    selectElement.appendChild(option);
-                });
-            }
-        } else {
-            console.warn('加载商品列表失败:', response.status);
-        }
-    } catch (error) {
-        console.error('加载商品列表时发生错误:', error);
-    }
+    await loadItemsList(currentCookieId, 'imageItemIdSelect', '选择商品或留空表示通用关键词');
 }
 
 // 添加图片关键词

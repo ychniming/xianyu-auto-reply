@@ -1,6 +1,6 @@
 // 认证模块 - 认证相关函数和 Token 管理
 import { authToken, apiBase, updateAuthToken } from './utils.js';
-import { showToast, toggleLoading } from './api.js';
+import { } from './api.js';
 import { logoutAPI, verifyAuthAPI, generateQRCodeAPI, checkQRCodeStatusAPI, recheckQRCodeAPI } from './api.js';
 
 // 检查认证状态
@@ -274,7 +274,7 @@ export function showVerificationRequired(data) {
         verificationContainer.style.display = 'block';
 
         // 显示Toast提示
-        showToast('账号需要手机验证，请按照提示完成验证', 'warning');
+        window.App.showToast('账号需要手机验证，请按照提示完成验证', 'warning');
     }
 }
 
@@ -293,7 +293,7 @@ export function continueAfterVerification() {
     // 继续轮询检查状态
     startQRCodeCheck();
 
-    showToast('正在检查登录状态...', 'info');
+    window.App.showToast('正在检查登录状态...', 'info');
 }
 
 // 处理扫码成功
@@ -302,9 +302,9 @@ export function handleQRCodeSuccess(data) {
         const { account_id, is_new_account } = data.account_info;
 
         if (is_new_account) {
-            showToast(`新账号添加成功！账号ID: ${account_id}`, 'success');
+            window.App.showToast(`新账号添加成功！账号ID: ${account_id}`, 'success');
         } else {
-            showToast(`账号Cookie已更新！账号ID: ${account_id}`, 'success');
+            window.App.showToast(`账号Cookie已更新！账号ID: ${account_id}`, 'success');
         }
 
         // 关闭模态框
@@ -328,3 +328,4 @@ export function clearQRCodeCheck() {
     }
     qrCodeSessionId = null;
 }
+

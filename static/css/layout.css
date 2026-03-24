@@ -7,7 +7,7 @@
 
 body {
     font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #f8fafc;
+    background: var(--bg-primary);
     min-height: 100vh;
     padding: 0;
     margin: 0;
@@ -20,11 +20,11 @@ body {
     top: 0;
     left: 0;
     height: 100vh;
-    width: 250px;
+    width: var(--sidebar-width);
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
     color: white;
-    z-index: 1000;
-    transition: all 0.3s ease;
+    z-index: var(--z-fixed);
+    transition: all var(--transition-base);
     box-shadow: 2px 0 10px rgba(0,0,0,0.1);
     display: flex;
     flex-direction: column;
@@ -32,13 +32,13 @@ body {
 }
 
 .sidebar-header {
-    padding: 1.5rem 1rem;
+    padding: var(--spacing-lg) var(--spacing-md);
     border-bottom: 1px solid rgba(255,255,255,0.1);
     flex-shrink: 0;
 }
 
 .sidebar-brand {
-    font-size: 1.25rem;
+    font-size: var(--font-xl);
     font-weight: 700;
     color: white;
     text-decoration: none;
@@ -47,7 +47,7 @@ body {
 }
 
 .sidebar-nav {
-    padding: 1rem 0;
+    padding: var(--spacing-md) 0;
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
@@ -66,7 +66,7 @@ body {
 .sidebar-nav::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.3);
     border-radius: 3px;
-    transition: background 0.3s ease;
+    transition: background var(--transition-base);
 }
 
 .sidebar-nav::-webkit-scrollbar-thumb:hover {
@@ -82,16 +82,16 @@ body {
 /* ========== 导航菜单 ========== */
 
 .nav-item {
-    margin: 0.25rem 0;
+    margin: var(--spacing-xs) 0;
 }
 
 .nav-link {
     display: flex;
     align-items: center;
-    padding: 0.75rem 1.5rem;
+    padding: 0.75rem var(--spacing-lg);
     color: rgba(255,255,255,0.8);
     text-decoration: none;
-    transition: all 0.3s ease;
+    transition: all var(--transition-base);
     border-left: 3px solid transparent;
 }
 
@@ -114,9 +114,9 @@ body {
 }
 
 .nav-divider {
-    padding: 0.5rem 1rem;
+    padding: 0.5rem var(--spacing-lg);
     border-top: 1px solid rgba(255,255,255,0.1);
-    margin-top: 0.5rem;
+    margin-top: var(--spacing-sm);
 }
 
 .nav-divider small {
@@ -128,20 +128,20 @@ body {
 /* ========== 主内容区域 ========== */
 
 .main-content {
-    margin-left: 250px;
+    margin-left: var(--sidebar-width);
     min-height: 100vh;
-    background: #f8fafc;
+    background: var(--bg-primary);
 }
 
 .content-header {
-    background: white;
-    padding: 1.5rem 2rem;
+    background: var(--white-color);
+    padding: var(--spacing-lg) var(--spacing-xl);
     border-bottom: 1px solid var(--border-color);
     box-shadow: var(--shadow-sm);
 }
 
 .content-body {
-    padding: 2rem;
+    padding: var(--spacing-xl);
 }
 
 .content-section {
@@ -157,14 +157,14 @@ body {
 .mobile-toggle {
     display: none;
     position: fixed;
-    top: 1rem;
-    left: 1rem;
-    z-index: 1001;
+    top: var(--spacing-md);
+    left: var(--spacing-md);
+    z-index: var(--z-fixed);
     background: var(--primary-color);
     color: white;
     border: none;
-    border-radius: 8px;
-    padding: 0.5rem;
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm);
     box-shadow: var(--shadow-md);
 }
 
@@ -188,7 +188,7 @@ body {
     }
 
     .container {
-        margin-top: 1rem;
-        padding: 0 1rem;
+        margin-top: var(--spacing-md);
+        padding: 0 var(--spacing-md);
     }
 }

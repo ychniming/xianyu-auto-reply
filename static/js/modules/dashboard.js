@@ -1,6 +1,6 @@
 // 仪表盘模块 - 仪表盘和日志相关函数
-import { apiBase, authToken, dashboardData, clearKeywordCache } from './utils.js';
-import { showToast, toggleLoading, fetchJSON, getLogsAPI, clearLogsAPI, getLogStatsAPI } from './api.js';
+import { apiBase, authToken, dashboardData, clearKeywordCache, escapeHtml } from './utils.js';
+import { fetchJSON, getLogsAPI, clearLogsAPI, getLogStatsAPI } from './api.js';
 
 // 加载仪表盘数据
 export async function loadDashboard() {
@@ -382,10 +382,4 @@ export async function showLogStats() {
     }
 }
 
-// HTML转义函数
-export function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
+

@@ -1,6 +1,6 @@
 /**
  * CSS Variables - CSS变量定义
- * 包含主题色彩系统、阴影、间距等
+ * 包含主题色彩系统、阴影、间距、字体大小、圆角等
  */
 
 :root {
@@ -8,22 +8,146 @@
     --primary-color: #4f46e5;
     --primary-hover: #4338ca;
     --primary-light: #6366f1;
+    --primary-lighter: #667eea;
 
     /* 辅助色 */
     --secondary-color: #6b7280;
     --success-color: #10b981;
+    --success-dark: #059669;
+    --success-light: #dcfce7;
+    --success-border: #bbf7d0;
     --danger-color: #ef4444;
+    --danger-dark: #dc2626;
+    --danger-light: #fef2f2;
+    --danger-border: #fecaca;
     --warning-color: #f59e0b;
+    --warning-dark: #d97706;
+    --warning-light: #fef3c7;
+    --warning-border: #f59e0b;
+    --info-color: #0dcaf0;
+    --info-dark: #17a2b8;
+    --info-light: #dbeafe;
+    --info-border: #0dcaf0;
 
     /* 背景色 */
     --light-color: #f9fafb;
     --dark-color: #1f2937;
+    --white-color: #ffffff;
+    --bg-primary: #f8fafc;
+    --bg-secondary: #f1f5f9;
 
     /* 边框颜色 */
     --border-color: #e5e7eb;
+    --border-light: #e5e7eb;
+    --border-dark: #d1d5db;
+
+    /* 文本颜色 */
+    --text-primary: #374151;
+    --text-secondary: #6b7280;
+    --text-muted: #9ca3af;
+    --text-light: #6b7280;
+    --text-dark: #1f2937;
+
+    /* 灰度色阶 */
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+
+    /* 匹配类型颜色 */
+    --match-contains-bg: #dbeafe;
+    --match-contains-text: #1e40af;
+    --match-exact-bg: #fce7f3;
+    --match-exact-text: #9d174d;
+    --match-prefix-bg: #d1fae5;
+    --match-prefix-text: #065f46;
+    --match-suffix-bg: #fef3c7;
+    --match-suffix-text: #92400e;
+    --match-regex-bg: #ede9fe;
+    --match-regex-text: #5b21b6;
+    --match-fuzzy-bg: #fed7aa;
+    --match-fuzzy-text: #9a3412;
+
+    /* 优先级颜色 */
+    --priority-high-bg: #ef4444;
+    --priority-high-dark: #dc2626;
+    --priority-medium-bg: #f59e0b;
+    --priority-medium-dark: #d97706;
+    --priority-low-bg: #10b981;
+    --priority-low-dark: #059669;
+
+    /* 回复模式颜色 */
+    --reply-random-bg: #dbeafe;
+    --reply-random-text: #1e40af;
+    --reply-sequence-bg: #d1fae5;
+    --reply-sequence-text: #065f46;
+
+    /* 关键词类型颜色 */
+    --keyword-text-bg: #e3f2fd;
+    --keyword-text-text: #1976d2;
+    --keyword-image-bg: #f3e5f5;
+    --keyword-image-text: #7b1fa2;
+
+    /* 二维码登录颜色 */
+    --qr-success: #28a745;
+    --qr-success-dark: #20c997;
+    --qr-success-hover: #218838;
+    --qr-success-hover-dark: #1ea085;
 
     /* 阴影系统 */
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.1);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+    /* 间距系统 */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-2xl: 4rem;
+
+    /* 字体大小 */
+    --font-xs: 0.75rem;
+    --font-sm: 0.875rem;
+    --font-base: 1rem;
+    --font-lg: 1.125rem;
+    --font-xl: 1.25rem;
+    --font-2xl: 2rem;
+    --font-3xl: 3rem;
+    --font-4xl: 4rem;
+
+    /* 圆角系统 */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-2xl: 20px;
+    --radius-full: 9999px;
+
+    /* 侧边栏 */
+    --sidebar-width: 250px;
+
+    /* 过渡 */
+    --transition-fast: 0.2s ease;
+    --transition-base: 0.3s ease;
+    --transition-slow: 0.4s ease;
+
+    /* Z-index */
+    --z-dropdown: 1000;
+    --z-sticky: 1020;
+    --z-fixed: 1030;
+    --z-modal-backdrop: 1040;
+    --z-modal: 1050;
+    --z-popover: 1060;
+    --z-tooltip: 1070;
+    --z-toast: 9999;
 }

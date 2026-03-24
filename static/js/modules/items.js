@@ -1,5 +1,5 @@
 // 商品管理模块 - Items Management
-import { apiBase, authToken, escapeHtml, formatDateTime } from './utils.js';
+import { apiBase, authToken, escapeHtml, formatDateTime, loadItemsList } from './utils.js';
 import { showToast } from './api.js';
 
 // ==================== 商品管理功能 ====================
@@ -7,25 +7,9 @@ import { showToast } from './api.js';
 // 切换商品多规格状态
 export async function toggleItemMultiSpec(cookieId, itemId, isMultiSpec) {
     try {
-        const response = await fetch(`${apiBase}/items/${encodeURIComponent(cookieId)}/${encodeURIComponent(itemId)}/multi-spec`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
-            },
-            body: JSON.stringify({
-                is_multi_spec: isMultiSpec
-            })
-        });
-
-        if (response.ok) {
-            showToast(`${isMultiSpec ? '开启' : '关闭'}多规格成功`, 'success');
-            // 刷新商品列表
-            await refreshItemsData();
-        } else {
-            const errorData = await response.json();
-            throw new Error(errorData.error || '操作失败');
-        }
+        await window.API.items.toggleMultiSpec(cookieId, itemId, isMultiSpec);
+        showToast(`${isMultiSpec ? '开启' : '关闭'}多规格成功`, 'success');
+        await refreshItemsData();
     } catch (error) {
         console.error('切换多规格状态失败:', error);
         showToast(`切换多规格状态失败: ${error.message}`, 'danger');
@@ -64,16 +48,8 @@ export async function refreshItemsData() {
 // 加载Cookie筛选选项
 export async function loadCookieFilter() {
     try {
-        const response = await fetch(`${apiBase}/cookies/details`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
-
-        if (response.ok) {
-            const jsonResponse = await response.json();
-            const accounts = jsonResponse.data || jsonResponse;
-            const select = document.getElementById('itemCookieFilter');
+        const accounts = await window.API.cookies.list();
+        const select = document.getElementById('itemCookieFilter');
 
             // 保存当前选择的值
             const currentValue = select.value;
@@ -131,7 +107,6 @@ export async function loadCookieFilter() {
             if (currentValue) {
                 select.value = currentValue;
             }
-        }
     } catch (error) {
         console.error('加载Cookie列表失败:', error);
         showToast('加载账号列表失败', 'danger');
@@ -141,19 +116,8 @@ export async function loadCookieFilter() {
 // 加载所有商品
 export async function loadAllItems() {
     try {
-        const response = await fetch(`${apiBase}/items`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
-
-        if (response.ok) {
-            const jsonResponse = await response.json();
-            const itemsData = jsonResponse.data || jsonResponse;
-            displayItems(itemsData.items);
-        } else {
-            throw new Error('获取商品列表失败');
-        }
+        const itemsData = await window.API.items.list();
+        displayItems(itemsData.items);
     } catch (error) {
         console.error('加载商品列表失败:', error);
         showToast('加载商品列表失败', 'danger');
@@ -170,19 +134,8 @@ export async function loadItemsByCookie() {
     }
 
     try {
-        const response = await fetch(`${apiBase}/items/cookie/${encodeURIComponent(cookieId)}`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
-
-        if (response.ok) {
-            const jsonResponse = await response.json();
-            const itemsData = jsonResponse.data || jsonResponse;
-            displayItems(itemsData.items);
-        } else {
-            throw new Error('获取商品列表失败');
-        }
+        const itemsData = await window.API.items.getByCookie(cookieId);
+        displayItems(itemsData.items);
     } catch (error) {
         console.error('加载商品列表失败:', error);
         showToast('加载商品列表失败', 'danger');
@@ -308,30 +261,12 @@ export async function getAllItemsFromAccount() {
     button.disabled = true;
 
     try {
-        const response = await fetch(`${apiBase}/items/get-by-page`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
-            },
-            body: JSON.stringify({
-                cookie_id: selectedCookieId,
-                page_number: pageNumber,
-                page_size: 20
-            })
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success) {
-                showToast(`成功获取第${pageNumber}页 ${data.current_count} 个商品，请查看控制台日志`, 'success');
-                // 刷新商品列表（保持筛选器选择）
-                await refreshItemsData();
-            } else {
-                showToast(data.message || '获取商品信息失败', 'danger');
-            }
+        const data = await window.API.items.getByPage(selectedCookieId, pageNumber, 20);
+        if (data.success) {
+            showToast(`成功获取第${pageNumber}页 ${data.current_count} 个商品，请查看控制台日志`, 'success');
+            await refreshItemsData();
         } else {
-            throw new Error(`HTTP ${response.status}`);
+            showToast(data.message || '获取商品信息失败', 'danger');
         }
     } catch (error) {
         console.error('获取商品信息失败:', error);
@@ -360,26 +295,13 @@ export async function getAllItemsFromAccountAll() {
     button.disabled = true;
 
     try {
-        const response = await fetch(`${apiBase}/items/get-all-from-account`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
-            },
-            body: JSON.stringify({
-                cookie_id: selectedCookieId
-            })
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success) {
-                const message = data.total_pages ?
-                    `成功获取 ${data.total_count} 个商品（共${data.total_pages}页），请查看控制台日志` :
-                    `成功获取商品信息，请查看控制台日志`;
-                showToast(message, 'success');
-                // 刷新商品列表（保持筛选器选择）
-                await refreshItemsData();
+        const data = await window.API.items.getAllFromAccount(selectedCookieId);
+        if (data.success) {
+            const message = data.total_pages ?
+                `成功获取 ${data.total_count} 个商品（共${data.total_pages}页），请查看控制台日志` :
+                `成功获取商品信息，请查看控制台日志`;
+            showToast(message, 'success');
+            await refreshItemsData();
             } else {
                 showToast(data.message || '获取商品信息失败', 'danger');
             }
@@ -399,29 +321,17 @@ export async function getAllItemsFromAccountAll() {
 // 编辑商品详情
 export async function editItem(cookieId, itemId) {
     try {
-        const response = await fetch(`${apiBase}/items/${encodeURIComponent(cookieId)}/${encodeURIComponent(itemId)}`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
+        const data = await window.API.items.get(cookieId, itemId);
+        const item = data.item;
 
-        if (response.ok) {
-            const data = await response.json();
-            const item = data.item;
+        document.getElementById('editItemCookieId').value = item.cookie_id;
+        document.getElementById('editItemId').value = item.item_id;
+        document.getElementById('editItemCookieIdDisplay').value = item.cookie_id;
+        document.getElementById('editItemIdDisplay').value = item.item_id;
+        document.getElementById('editItemDetail').value = item.item_detail || '';
 
-            // 填充表单
-            document.getElementById('editItemCookieId').value = item.cookie_id;
-            document.getElementById('editItemId').value = item.item_id;
-            document.getElementById('editItemCookieIdDisplay').value = item.cookie_id;
-            document.getElementById('editItemIdDisplay').value = item.item_id;
-            document.getElementById('editItemDetail').value = item.item_detail || '';
-
-            // 显示模态框
-            const modal = new bootstrap.Modal(document.getElementById('editItemModal'));
-            modal.show();
-        } else {
-            throw new Error('获取商品详情失败');
-        }
+        const modal = new bootstrap.Modal(document.getElementById('editItemModal'));
+        modal.show();
     } catch (error) {
         console.error('获取商品详情失败:', error);
         showToast('获取商品详情失败', 'danger');
@@ -440,30 +350,11 @@ export async function saveItemDetail() {
     }
 
     try {
-        const response = await fetch(`${apiBase}/items/${encodeURIComponent(cookieId)}/${encodeURIComponent(itemId)}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
-            },
-            body: JSON.stringify({
-                item_detail: itemDetail
-            })
-        });
-
-        if (response.ok) {
-            showToast('商品详情更新成功', 'success');
-
-            // 关闭模态框
-            const modal = bootstrap.Modal.getInstance(document.getElementById('editItemModal'));
-            modal.hide();
-
-            // 刷新列表（保持筛选器选择）
-            await refreshItemsData();
-        } else {
-            const error = await response.text();
-            showToast(`更新失败: ${error}`, 'danger');
-        }
+        await window.API.items.update(cookieId, itemId, { item_detail: itemDetail });
+        showToast('商品详情更新成功', 'success');
+        const modal = bootstrap.Modal.getInstance(document.getElementById('editItemModal'));
+        modal.hide();
+        await refreshItemsData();
     } catch (error) {
         console.error('更新商品详情失败:', error);
         showToast('更新商品详情失败', 'danger');
@@ -472,28 +363,15 @@ export async function saveItemDetail() {
 
 // 删除商品信息
 export async function deleteItem(cookieId, itemId, itemTitle) {
+    const confirmed = confirm(`确定要删除商品信息吗？\n\n商品ID: ${itemId}\n商品标题: ${itemTitle || '未设置'}\n\n此操作不可撤销！`);
+    if (!confirmed) {
+        return;
+    }
+
     try {
-        // 确认删除
-        const confirmed = confirm(`确定要删除商品信息吗？\n\n商品ID: ${itemId}\n商品标题: ${itemTitle || '未设置'}\n\n此操作不可撤销！`);
-        if (!confirmed) {
-            return;
-        }
-
-        const response = await fetch(`${apiBase}/items/${encodeURIComponent(cookieId)}/${encodeURIComponent(itemId)}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
-
-        if (response.ok) {
-            showToast('商品信息删除成功', 'success');
-            // 刷新列表（保持筛选器选择）
-            await refreshItemsData();
-        } else {
-            const error = await response.text();
-            showToast(`删除失败: ${error}`, 'danger');
-        }
+        await window.API.items.delete(cookieId, itemId);
+        showToast('商品信息删除成功', 'success');
+        await refreshItemsData();
     } catch (error) {
         console.error('删除商品信息失败:', error);
         showToast('删除商品信息失败', 'danger');
@@ -525,24 +403,9 @@ export async function batchDeleteItems() {
             };
         });
 
-        const response = await fetch(`${apiBase}/items/batch`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
-            },
-            body: JSON.stringify({ items: itemsToDelete })
-        });
-
-        if (response.ok) {
-            const result = await response.json();
-            showToast(`批量删除完成: 成功 ${result.success_count} 个，失败 ${result.failed_count} 个`, 'success');
-            // 刷新列表（保持筛选器选择）
-            await refreshItemsData();
-        } else {
-            const error = await response.text();
-            showToast(`批量删除失败: ${error}`, 'danger');
-        }
+        const result = await window.API.items.batchDelete(itemsToDelete);
+        showToast(`批量删除完成: 成功 ${result.success_count} 个，失败 ${result.failed_count} 个`, 'success');
+        await refreshItemsData();
     } catch (error) {
         console.error('批量删除商品信息失败:', error);
         showToast('批量删除商品信息失败', 'danger');
@@ -595,70 +458,9 @@ export function updateBatchDeleteButton() {
     }
 }
 
-// 加载商品列表（用于自动回复页面的商品选择下拉框）
-export async function loadItemsList(accountId) {
-    try {
-        const response = await fetch(`${apiBase}/items/${accountId}`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            const items = data.items || [];
-
-            // 更新商品选择下拉框
-            const selectElement = document.getElementById('newItemIdSelect');
-            if (selectElement) {
-                // 清空现有选项（保留第一个默认选项）
-                selectElement.innerHTML = '<option value="">选择商品或留空表示通用关键词</option>';
-
-                // 添加商品选项
-                items.forEach(item => {
-                    const option = document.createElement('option');
-                    option.value = item.item_id;
-                    option.textContent = `${item.item_id} - ${item.item_title}`;
-                    selectElement.appendChild(option);
-                });
-            }
-        } else {
-            console.warn('加载商品列表失败:', response.status);
-        }
-    } catch (error) {
-        console.error('加载商品列表时发生错误:', error);
-    }
-}
-
 // 加载商品列表（用于图片关键词选择商品）
 export async function loadItemsListForImageKeyword() {
-    try {
-        const response = await fetch(`${apiBase}/items/${currentCookieId}`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            const items = data.items || [];
-
-            // 更新商品选择下拉框
-            const selectElement = document.getElementById('imageKeywordItemSelect');
-            if (selectElement) {
-                // 清空现有选项
-                selectElement.innerHTML = '<option value="">选择商品或留空表示通用图片关键词</option>';
-
-                // 添加商品选项
-                items.forEach(item => {
-                    const option = document.createElement('option');
-                    option.value = item.item_id;
-                    option.textContent = `${item.item_id} - ${item.item_title}`;
-                    selectElement.appendChild(option);
-                });
-            }
-        }
-    } catch (error) {
-        console.error('加载商品列表时发生错误:', error);
-    }
+    await loadItemsList(currentCookieId, 'imageKeywordItemSelect', '选择商品或留空表示通用图片关键词');
 }
+
+

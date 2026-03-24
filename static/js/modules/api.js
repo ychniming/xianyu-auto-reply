@@ -1,121 +1,96 @@
-// API 模块 - 所有 API 调用函数
+// API 模块 - 统一 API 命名空间
 import { authToken, apiBase } from './utils.js';
 
-// ==================== 重试配置 ====================
-const MAX_RETRIES = 3;           // 最大重试次数
-const BASE_DELAY = 1000;         // 基础延迟时间（毫秒）
-const MAX_DELAY = 10000;         // 最大延迟时间（毫秒）
+const MAX_RETRIES = 3;
+const BASE_DELAY = 1000;
+const MAX_DELAY = 10000;
 
-/**
- * 判断错误是否可重试
- * 网络错误、超时、5xx 服务器错误可以重试
- * @param {Error} error - 错误对象
- * @param {Response} response - fetch Response 对象（可选）
- * @returns {boolean} 是否可重试
- */
+let abortController = null;
+
 function isRetryableError(error, response = null) {
-    // 网络错误（TypeError 通常表示网络问题）
-    if (error.name === 'TypeError') {
-        return true;
-    }
-    
-    // 超时错误
-    if (error.name === 'AbortError') {
-        return true;
-    }
-    
-    // 服务器错误（5xx）
-    if (response && response.status >= 500 && response.status < 600) {
-        return true;
-    }
-    
-    // 429 Too Many Requests
-    if (response && response.status === 429) {
-        return true;
-    }
-    
+    if (error.name === 'TypeError') return true;
+    if (error.name === 'AbortError') return true;
+    if (response && response.status >= 500 && response.status < 600) return true;
+    if (response && response.status === 429) return true;
     return false;
 }
 
-/**
- * 计算重试延迟时间（指数退避）
- * @param {number} retryCount - 当前重试次数（从0开始）
- * @returns {number} 延迟时间（毫秒）
- */
 function calculateDelay(retryCount) {
-    // 指数退避：delay = baseDelay * 2^retryCount
     const delay = BASE_DELAY * Math.pow(2, retryCount);
-    // 添加随机抖动（±20%）避免请求同步
     const jitter = delay * 0.2 * (Math.random() - 0.5);
     return Math.min(delay + jitter, MAX_DELAY);
 }
 
-/**
- * 延迟执行
- * @param {number} ms - 延迟毫秒数
- * @returns {Promise}
- */
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-/**
- * 带重试机制的 fetch 请求
- * @param {string} url - 请求URL
- * @param {Object} options - fetch选项
- * @param {number} retries - 剩余重试次数
- * @returns {Promise<Response>} fetch Response
- */
 async function fetchWithRetry(url, options = {}, retries = MAX_RETRIES) {
     let lastError = null;
-    let lastResponse = null;
-    
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    for (let attempt = 0; attempt <= retries; attempt++) {
         try {
             const response = await fetch(url, options);
-            
-            // 检查是否需要重试（服务器错误）
-            if (!response.ok && isRetryableError(null, response) && attempt < MAX_RETRIES) {
+            if (!response.ok && isRetryableError(null, response) && attempt < retries) {
                 const delay = calculateDelay(attempt);
                 console.warn(`[API] 请求失败 (HTTP ${response.status})，${delay}ms 后重试 (${attempt + 1}/${MAX_RETRIES})`);
                 await sleep(delay);
                 continue;
             }
-            
             return response;
         } catch (error) {
             lastError = error;
-            
-            // 检查是否需要重试（网络错误）
-            if (isRetryableError(error) && attempt < MAX_RETRIES) {
+            if (isRetryableError(error) && attempt < retries) {
                 const delay = calculateDelay(attempt);
                 console.warn(`[API] 请求失败 (${error.message})，${delay}ms 后重试 (${attempt + 1}/${MAX_RETRIES})`);
                 await sleep(delay);
                 continue;
             }
-            
             throw error;
         }
     }
-    
-    // 所有重试都失败
     throw lastError || new Error('请求失败，已达最大重试次数');
 }
 
-// API 请求包装函数（带重试机制）
-export async function fetchJSON(url, opts = {}) {
+function showToast(message, type = 'success') {
+    const toastContainer = document.querySelector('.toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-white bg-${type} border-0`;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    `;
+    toast.querySelector('.toast-body').textContent = message;
+    toastContainer.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+    bsToast.show();
+    toast.addEventListener('hidden.bs.toast', () => toast.remove());
+}
+
+function toggleLoading(show) {
+    document.getElementById('loading').classList.toggle('d-none', !show);
+}
+
+function handleApiError(err) {
+    console.error(err);
+    showToast(err.message || '操作失败', 'danger');
+    toggleLoading(false);
+}
+
+async function fetchJSON(url, opts = {}) {
     toggleLoading(true);
     try {
-        // 添加认证头
         const token = authToken.value;
         if (token) {
             opts.headers = opts.headers || {};
             opts.headers['Authorization'] = `Bearer ${token}`;
         }
-
         const res = await fetchWithRetry(url, opts);
         if (res.status === 401) {
-            // 未授权，跳转到登录页面
             localStorage.removeItem('auth_token');
             window.location.href = '/';
             return;
@@ -125,7 +100,6 @@ export async function fetchJSON(url, opts = {}) {
             try {
                 const errorText = await res.text();
                 if (errorText) {
-                    // 尝试解析JSON错误信息
                     try {
                         const errorJson = JSON.parse(errorText);
                         errorMessage = errorJson.detail || errorJson.message || errorText;
@@ -140,8 +114,6 @@ export async function fetchJSON(url, opts = {}) {
         }
         const jsonResponse = await res.json();
         toggleLoading(false);
-        // 统一响应格式：{code, message, data}
-        // 如果响应包含 data 属性，返回 data；否则返回整个响应
         return jsonResponse.data !== undefined ? jsonResponse.data : jsonResponse;
     } catch (err) {
         handleApiError(err);
@@ -149,709 +121,512 @@ export async function fetchJSON(url, opts = {}) {
     }
 }
 
-// 错误处理
-export async function handleApiError(err) {
-    console.error(err);
-    showToast(err.message || '操作失败', 'danger');
-    toggleLoading(false);
-}
-
-// 显示/隐藏加载动画
-export function toggleLoading(show) {
-    document.getElementById('loading').classList.toggle('d-none', !show);
-}
-
-// 高阶函数：自动处理loading的API调用
-// 使用方式：const data = await withLoading(fetchJSON(url, opts))
-export function withLoading(handler, options = {}) {
-    const { showLoading = true, showError = true, errorMessage = null } = options;
-    
-    return async function(...args) {
-        if (showLoading) {
-            toggleLoading(true);
+window.API = {
+    _request: async function(url, options = {}) {
+        const token = authToken.value;
+        const headers = { ...options.headers };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
         }
-        
+        const opts = { ...options, headers };
+
+        abortController = new AbortController();
+        opts.signal = abortController.signal;
+
+        toggleLoading(true);
         try {
-            const result = await handler.apply(this, args);
-            return result;
+            const res = await fetchWithRetry(url, opts);
+            if (res.status === 401) {
+                localStorage.removeItem('auth_token');
+                window.location.href = '/';
+                return null;
+            }
+            if (!res.ok) {
+                let errorMessage = `HTTP ${res.status}`;
+                try {
+                    const errorText = await res.text();
+                    if (errorText) {
+                        try {
+                            const errorJson = JSON.parse(errorText);
+                            errorMessage = errorJson.detail || errorJson.message || errorText;
+                        } catch {
+                            errorMessage = errorText;
+                        }
+                    }
+                } catch {
+                    errorMessage = `HTTP ${res.status} ${res.statusText}`;
+                }
+                throw new Error(errorMessage);
+            }
+            const jsonResponse = await res.json();
+            toggleLoading(false);
+            return jsonResponse.data !== undefined ? jsonResponse.data : jsonResponse;
         } catch (err) {
-            if (showError) {
-                handleApiError(err);
-            } else if (errorMessage) {
-                showToast(errorMessage, 'danger');
-            }
+            handleApiError(err);
             throw err;
-        } finally {
-            if (showLoading) {
-                toggleLoading(false);
-            }
         }
-    };
-}
+    },
 
-// 高阶函数：创建带loading的API方法
-// 使用方式：const loadCookies = createApiMethod(loadCookiesAPI)
-//          const data = await loadCookies()
-export function createApiMethod(apiFunc, options = {}) {
-    return withLoading(apiFunc, options);
-}
+    _getAuthHeader: function() {
+        const token = authToken.value;
+        return token ? { 'Authorization': `Bearer ${token}` } : {};
+    },
 
-// 显示提示消息
-export function showToast(message, type = 'success') {
-    const toastContainer = document.querySelector('.toast-container');
-    const toast = document.createElement('div');
-    toast.className = `toast align-items-center text-white bg-${type} border-0`;
-    toast.setAttribute('role', 'alert');
-    toast.setAttribute('aria-live', 'assertive');
-    toast.setAttribute('aria-atomic', 'true');
-
-    toast.innerHTML = `
-        <div class="d-flex">
-            <div class="toast-body"></div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-    `;
-    
-    // 使用textContent安全设置消息内容，防止XSS
-    toast.querySelector('.toast-body').textContent = message;
-
-    toastContainer.appendChild(toast);
-    const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
-    bsToast.show();
-
-    // 自动移除
-    toast.addEventListener('hidden.bs.toast', () => {
-        toast.remove();
-    });
-}
-
-// ==================== Cookie/账号 API ====================
-
-// 加载Cookie列表
-export async function loadCookiesAPI() {
-    return await fetchJSON(apiBase + '/cookies/details');
-}
-
-// 添加Cookie
-export async function addCookieAPI(id, value) {
-    return await fetchJSON(apiBase + '/cookies', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, value })
-    });
-}
-
-// 更新Cookie
-export async function updateCookieAPI(id, value) {
-    return await fetchJSON(apiBase + `/cookies/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, value })
-    });
-}
-
-// 删除Cookie
-export async function deleteCookieAPI(id) {
-    return await fetchJSON(apiBase + `/cookies/${id}`, { method: 'DELETE' });
-}
-
-// 切换账号状态
-export async function toggleAccountStatusAPI(accountId, enabled) {
-    return await fetch(`${apiBase}/cookies/${accountId}/status`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken.value}`
-        },
-        body: JSON.stringify({ enabled: enabled })
-    });
-}
-
-// 切换自动确认发货状态
-export async function toggleAutoConfirmAPI(accountId, enabled) {
-    return await fetch(`${apiBase}/cookies/${accountId}/auto-confirm`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken.value}`
-        },
-        body: JSON.stringify({ auto_confirm: enabled })
-    });
-}
-
-// ==================== 关键词 API ====================
-
-// 获取账号关键词
-export async function getKeywordsAPI(accountId) {
-    return await fetchJSON(`${apiBase}/keywords/${accountId}`);
-}
-
-// 获取账号关键词（带item_id）
-export async function getKeywordsWithItemIdAPI(accountId) {
-    return await fetchJSON(`${apiBase}/keywords-with-item-id/${accountId}`);
-}
-
-// 保存关键词
-export async function saveKeywordsAPI(accountId, keywords) {
-    return await fetch(`${apiBase}/keywords-with-item-id/${accountId}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify({ keywords })
-    });
-}
-
-// 删除关键词
-export async function deleteKeywordAPI(cookieId, index) {
-    return await fetch(`${apiBase}/keywords/${cookieId}/${index}`, {
-        method: 'DELETE',
-        headers: {
-            'Authorization': `Bearer ${authToken}`
+    cancelPending: function() {
+        if (abortController) {
+            abortController.abort();
+            abortController = null;
         }
-    });
-}
+    },
 
-// 添加图片关键词
-export async function addImageKeywordAPI(cookieId, formData) {
-    return await fetch(`${apiBase}/keywords/${cookieId}/image`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${authToken}`
+    cookies: {
+        list: async function() {
+            return await fetchJSON(`${apiBase}/cookies/details`);
         },
-        body: formData
-    });
-}
 
-// 导出关键词
-export async function exportKeywordsAPI(cookieId) {
-    return await fetch(`${apiBase}/keywords-export/${cookieId}`, {
-        headers: {
-            'Authorization': `Bearer ${authToken}`
+        create: async function(id, value) {
+            return await fetchJSON(`${apiBase}/cookies`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, value })
+            });
+        },
+
+        update: async function(id, data) {
+            return await fetchJSON(`${apiBase}/cookies/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+        },
+
+        delete: async function(id) {
+            return await fetchJSON(`${apiBase}/cookies/${id}`, { method: 'DELETE' });
+        },
+
+        getDetails: async function(cookieId) {
+            return await fetchJSON(`${apiBase}/cookies/details/${cookieId}`);
+        },
+
+        toggleStatus: async function(accountId, enabled) {
+            return await this._request(`${apiBase}/cookies/${accountId}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled })
+            });
+        },
+
+        toggleAutoConfirm: async function(accountId, enabled) {
+            return await this._request(`${apiBase}/cookies/${accountId}/auto-confirm`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ auto_confirm: enabled })
+            });
         }
-    });
-}
+    },
 
-// 导入关键词
-export async function importKeywordsAPI(cookieId, formData) {
-    return await fetch(`${apiBase}/keywords-import/${cookieId}`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${authToken}`
+    keywords: {
+        list: async function(cookieId) {
+            return await fetchJSON(`${apiBase}/keywords/${cookieId}`);
         },
-        body: formData
-    });
-}
 
-// ==================== 商品 API ====================
-
-// 获取所有商品
-export async function getAllItemsAPI() {
-    return await fetchJSON(`${apiBase}/items`);
-}
-
-// 按账号获取商品
-export async function getItemsByCookieAPI(cookieId) {
-    return await fetchJSON(`${apiBase}/items/cookie/${encodeURIComponent(cookieId)}`);
-}
-
-// 获取单个商品
-export async function getItemAPI(cookieId, itemId) {
-    return await fetchJSON(`${apiBase}/items/${encodeURIComponent(cookieId)}/${encodeURIComponent(itemId)}`);
-}
-
-// 更新商品详情
-export async function updateItemAPI(cookieId, itemId, itemDetail) {
-    return await fetch(`${apiBase}/items/${encodeURIComponent(cookieId)}/${encodeURIComponent(itemId)}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
+        listWithItemId: async function(cookieId) {
+            return await fetchJSON(`${apiBase}/keywords-with-item-id/${cookieId}`);
         },
-        body: JSON.stringify({ item_detail: itemDetail })
-    });
-}
 
-// 删除商品
-export async function deleteItemAPI(cookieId, itemId) {
-    return await fetch(`${apiBase}/items/${encodeURIComponent(cookieId)}/${encodeURIComponent(itemId)}`, {
-        method: 'DELETE',
-        headers: {
-            'Authorization': `Bearer ${authToken}`
+        create: async function(cookieId, keyword, reply, itemId) {
+            return await this._request(`${apiBase}/keywords-with-item-id/${cookieId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keywords: [{ keyword, reply, item_id: itemId }] })
+            });
+        },
+
+        update: async function(keywordId, data) {
+            return await this._request(`${apiBase}/keywords/${keywordId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+        },
+
+        delete: async function(cookieId, keywordId) {
+            return await this._request(`${apiBase}/keywords/${cookieId}/${keywordId}`, {
+                method: 'DELETE'
+            });
+        },
+
+        addImage: async function(cookieId, formData) {
+            return await this._request(`${apiBase}/keywords/${cookieId}/image`, {
+                method: 'POST',
+                body: formData
+            });
+        },
+
+        export: async function(cookieId) {
+            return await this._request(`${apiBase}/keywords-export/${cookieId}`);
+        },
+
+        import: async function(cookieId, formData) {
+            return await this._request(`${apiBase}/keywords-import/${cookieId}`, {
+                method: 'POST',
+                body: formData
+            });
         }
-    });
-}
+    },
 
-// 批量删除商品
-export async function batchDeleteItemsAPI(items) {
-    return await fetch(`${apiBase}/items/batch`, {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
+    items: {
+        list: async function() {
+            return await fetchJSON(`${apiBase}/items`);
         },
-        body: JSON.stringify({ items })
-    });
-}
 
-// 切换商品多规格状态
-export async function toggleItemMultiSpecAPI(cookieId, itemId, isMultiSpec) {
-    return await fetch(`${apiBase}/items/${encodeURIComponent(cookieId)}/${encodeURIComponent(itemId)}/multi-spec`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
+        get: async function(cookieId, itemId) {
+            return await fetchJSON(`${apiBase}/items/${encodeURIComponent(cookieId)}/${encodeURIComponent(itemId)}`);
         },
-        body: JSON.stringify({ is_multi_spec: isMultiSpec })
-    });
-}
 
-// 按页获取商品
-export async function getItemsByPageAPI(cookieId, pageNumber, pageSize = 20) {
-    return await fetch(`${apiBase}/items/get-by-page`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
+        getByCookie: async function(cookieId) {
+            return await fetchJSON(`${apiBase}/items/cookie/${encodeURIComponent(cookieId)}`);
         },
-        body: JSON.stringify({
-            cookie_id: cookieId,
-            page_number: pageNumber,
-            page_size: pageSize
-        })
-    });
-}
 
-// 获取账号所有商品
-export async function getAllItemsFromAccountAPI(cookieId) {
-    return await fetch(`${apiBase}/items/get-all-from-account`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
+        getByPage: async function(cookieId, pageNumber, pageSize = 20) {
+            return await this._request(`${apiBase}/items/get-by-page`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    cookie_id: cookieId,
+                    page_number: pageNumber,
+                    page_size: pageSize
+                })
+            });
         },
-        body: JSON.stringify({ cookie_id: cookieId })
-    });
-}
 
-// ==================== 默认回复 API ====================
-
-// 获取所有默认回复
-export async function getDefaultRepliesAPI() {
-    return await fetchJSON(`${apiBase}/default-replies`);
-}
-
-// 保存默认回复
-export async function saveDefaultReplyAPI(type, content) {
-    return await fetch(`${apiBase}/default-replies/${type}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
+        getAllFromAccount: async function(cookieId) {
+            return await this._request(`${apiBase}/items/get-all-from-account`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cookie_id: cookieId })
+            });
         },
-        body: JSON.stringify({ content })
-    });
-}
 
-// 获取账号默认回复
-export async function getDefaultReplyAPI(accountId) {
-    return await fetchJSON(`${apiBase}/default-replies/${accountId}`);
-}
-
-// 更新默认回复
-export async function updateDefaultReplyAPI(accountId, data) {
-    return await fetch(`${apiBase}/default-replies/${accountId}`, {
-        method: 'PUT',
-        headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
+        update: async function(cookieId, itemId, itemDetail) {
+            return await this._request(`${apiBase}/items/${encodeURIComponent(cookieId)}/${encodeURIComponent(itemId)}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ item_detail: itemDetail })
+            });
         },
-        body: JSON.stringify(data)
-    });
-}
 
-// ==================== AI 回复 API ====================
-
-// 获取AI回复设置
-export async function getAIReplySettingsAPI(accountId) {
-    return await fetchJSON(`${apiBase}/ai-reply-settings/${accountId}`);
-}
-
-// 保存AI回复设置
-export async function saveAIReplySettingsAPI(accountId, settings) {
-    return await fetch(`${apiBase}/ai-reply-settings/${accountId}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
+        delete: async function(cookieId, itemId) {
+            return await this._request(`${apiBase}/items/${encodeURIComponent(cookieId)}/${encodeURIComponent(itemId)}`, {
+                method: 'DELETE'
+            });
         },
-        body: JSON.stringify(settings)
-    });
-}
 
-// AI回复配置保存（全局配置版本）
-export async function saveAIReplyConfigAPI(config) {
-    return await fetch(`${apiBase}/ai-reply-config`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
+        batchDelete: async function(items) {
+            return await this._request(`${apiBase}/items/batch`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ items })
+            });
         },
-        body: JSON.stringify(config)
-    });
-}
 
-// 测试AI回复
-export async function testAIReplyAPI(accountId, testData) {
-    return await fetch(`${apiBase}/ai-reply-test/${accountId}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify(testData)
-    });
-}
-
-// ==================== 通知渠道 API ====================
-
-// 获取通知渠道
-export async function getNotificationChannelsAPI() {
-    return await fetchJSON(`${apiBase}/notification-channels`);
-}
-
-// 添加通知渠道
-export async function addNotificationChannelAPI(data) {
-    return await fetch(`${apiBase}/notification-channels`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-    });
-}
-
-// 更新通知渠道
-export async function updateNotificationChannelAPI(channelId, data) {
-    return await fetch(`${apiBase}/notification-channels/${channelId}`, {
-        method: 'PUT',
-        headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-    });
-}
-
-// 删除通知渠道
-export async function deleteNotificationChannelAPI(channelId) {
-    return await fetch(`${apiBase}/notification-channels/${channelId}`, {
-        method: 'DELETE',
-        headers: {
-            'Authorization': `Bearer ${authToken}`
+        toggleMultiSpec: async function(cookieId, itemId, isMultiSpec) {
+            return await this._request(`${apiBase}/items/${encodeURIComponent(cookieId)}/${encodeURIComponent(itemId)}/multi-spec`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_multi_spec: isMultiSpec })
+            });
         }
-    });
-}
+    },
 
-// ==================== 消息通知 API ====================
-
-// 获取消息通知配置
-export async function getMessageNotificationsAPI() {
-    return await fetchJSON(`${apiBase}/message-notifications`);
-}
-
-// 获取账号消息通知配置
-export async function getAccountNotificationAPI(accountId) {
-    return await fetchJSON(`${apiBase}/message-notifications/${accountId}`);
-}
-
-// 保存账号消息通知配置
-export async function saveAccountNotificationAPI(accountId, data) {
-    return await fetch(`${apiBase}/message-notifications/${accountId}`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
+    dashboard: {
+        getStats: async function() {
+            return await fetchJSON(`${apiBase}/dashboard/stats`);
         },
-        body: JSON.stringify(data)
-    });
-}
 
-// 删除账号消息通知配置
-export async function deleteAccountNotificationAPI(accountId) {
-    return await fetch(`${apiBase}/message-notifications/account/${accountId}`, {
-        method: 'DELETE',
-        headers: {
-            'Authorization': `Bearer ${authToken}`
+        getAccounts: async function() {
+            return await fetchJSON(`${apiBase}/cookies/details`);
         }
-    });
-}
+    },
 
-// ==================== 卡券 API ====================
-
-// 获取卡券列表
-export async function getCardsAPI() {
-    return await fetchJSON(`${apiBase}/cards`);
-}
-
-// 获取单个卡券
-export async function getCardAPI(cardId) {
-    return await fetchJSON(`${apiBase}/cards/${cardId}`);
-}
-
-// 添加卡券
-export async function addCardAPI(cardData) {
-    return await fetch(`${apiBase}/cards`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
+    ai: {
+        getSettings: async function(accountId) {
+            return await fetchJSON(`${apiBase}/ai-reply-settings/${accountId}`);
         },
-        body: JSON.stringify(cardData)
-    });
-}
 
-// 更新卡券
-export async function updateCardAPI(cardId, cardData) {
-    return await fetch(`${apiBase}/cards/${cardId}`, {
-        method: 'PUT',
-        headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
+        saveSettings: async function(accountId, settings) {
+            return await this._request(`${apiBase}/ai-reply-settings/${accountId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings)
+            });
         },
-        body: JSON.stringify(cardData)
-    });
-}
 
-// 更新带图片的卡券
-export async function updateCardWithImageAPI(cardId, formData) {
-    return await fetch(`${apiBase}/cards/${cardId}/image`, {
-        method: 'PUT',
-        headers: {
-            'Authorization': `Bearer ${authToken}`
+        saveConfig: async function(config) {
+            return await this._request(`${apiBase}/ai-reply-config`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config)
+            });
         },
-        body: formData
-    });
-}
 
-// 删除卡券
-export async function deleteCardAPI(cardId) {
-    return await fetch(`${apiBase}/cards/${cardId}`, {
-        method: 'DELETE',
-        headers: {
-            'Authorization': `Bearer ${authToken}`
+        test: async function(accountId, testData) {
+            return await this._request(`${apiBase}/ai-reply-test/${accountId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(testData)
+            });
         }
-    });
-}
+    },
 
-// 上传图片
-export async function uploadImageAPI(formData) {
-    return await fetch(`${apiBase}/upload-image`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${authToken}`
+    delivery: {
+        list: async function() {
+            return await fetchJSON(`${apiBase}/delivery-rules`);
         },
-        body: formData
-    });
-}
 
-// ==================== 发货规则 API ====================
-
-// 获取发货规则
-export async function getDeliveryRulesAPI() {
-    return await fetchJSON(`${apiBase}/delivery-rules`);
-}
-
-// 获取单个发货规则
-export async function getDeliveryRuleAPI(ruleId) {
-    return await fetchJSON(`${apiBase}/delivery-rules/${ruleId}`);
-}
-
-// 添加发货规则
-export async function addDeliveryRuleAPI(ruleData) {
-    return await fetch(`${apiBase}/delivery-rules`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
+        get: async function(ruleId) {
+            return await fetchJSON(`${apiBase}/delivery-rules/${ruleId}`);
         },
-        body: JSON.stringify(ruleData)
-    });
-}
 
-// 更新发货规则
-export async function updateDeliveryRuleAPI(ruleId, ruleData) {
-    return await fetch(`${apiBase}/delivery-rules/${ruleId}`, {
-        method: 'PUT',
-        headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
+        create: async function(data) {
+            return await this._request(`${apiBase}/delivery-rules`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
         },
-        body: JSON.stringify(ruleData)
-    });
-}
 
-// 删除发货规则
-export async function deleteDeliveryRuleAPI(ruleId) {
-    return await fetch(`${apiBase}/delivery-rules/${ruleId}`, {
-        method: 'DELETE',
-        headers: {
-            'Authorization': `Bearer ${authToken}`
-        }
-    });
-}
-
-// ==================== 系统 API ====================
-
-// 获取用户设置
-export async function getUserSettingsAPI() {
-    return await fetchJSON(`${apiBase}/user-settings`);
-}
-
-// 更新用户设置
-export async function updateUserSettingsAPI(settings) {
-    return await fetch(`${apiBase}/user-settings/theme_color`, {
-        method: 'PUT',
-        headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
+        update: async function(ruleId, data) {
+            return await this._request(`${apiBase}/delivery-rules/${ruleId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
         },
-        body: JSON.stringify(settings)
-    });
-}
 
-// 修改密码
-export async function changePasswordAPI(currentPassword, newPassword) {
-    return await fetch(`${apiBase}/change-admin-password`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
+        delete: async function(ruleId) {
+            return await this._request(`${apiBase}/delivery-rules/${ruleId}`, {
+                method: 'DELETE'
+            });
+        }
+    },
+
+    defaultReplies: {
+        list: async function() {
+            return await fetchJSON(`${apiBase}/default-replies`);
         },
-        body: JSON.stringify({
-            current_password: currentPassword,
-            new_password: newPassword
-        })
-    });
-}
 
-// 获取日志
-export async function getLogsAPI(lines = 100) {
-    return await fetchJSON(`${apiBase}/logs?lines=${lines}`);
-}
-
-// 清空日志
-export async function clearLogsAPI() {
-    return await fetch(`${apiBase}/logs/clear`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${authToken}`
-        }
-    });
-}
-
-// 获取日志统计
-export async function getLogStatsAPI() {
-    return await fetchJSON(`${apiBase}/logs/stats`);
-}
-
-// 刷新系统缓存
-export async function reloadSystemCacheAPI() {
-    return await fetch(`${apiBase}/system/reload-cache`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${authToken}`
-        }
-    });
-}
-
-// ==================== 备份 API ====================
-
-// 下载数据库备份
-export async function downloadDatabaseBackupAPI() {
-    return await fetch(`${apiBase}/admin/backup/download`, {
-        headers: {
-            'Authorization': `Bearer ${authToken}`
-        }
-    });
-}
-
-// 上传数据库备份
-export async function uploadDatabaseBackupAPI(formData) {
-    return await fetch(`${apiBase}/admin/backup/upload`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${authToken}`
+        get: async function(accountId) {
+            return await fetchJSON(`${apiBase}/default-replies/${accountId}`);
         },
-        body: formData
-    });
-}
 
-// 导出备份
-export async function exportBackupAPI() {
-    return await fetchJSON(`${apiBase}/backup/export`);
-}
-
-// 导入备份
-export async function importBackupAPI(formData) {
-    return await fetch(`${apiBase}/backup/import`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${authToken}`
+        update: async function(accountId, data) {
+            return await this._request(`${apiBase}/default-replies/${accountId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
         },
-        body: formData
-    });
-}
 
-// ==================== 二维码登录 API ====================
-
-// 生成二维码
-export async function generateQRCodeAPI() {
-    return await fetch(`${apiBase}/qr-login/generate`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
+        save: async function(type, content) {
+            return await this._request(`${apiBase}/default-replies/${type}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content })
+            });
         }
-    });
-}
+    },
 
-// 检查二维码状态
-export async function checkQRCodeStatusAPI(sessionId) {
-    return await fetch(`${apiBase}/qr-login/check/${sessionId}`, {
-        headers: {
-            'Authorization': `Bearer ${authToken}`
-        }
-    });
-}
+    notifications: {
+        getChannels: async function() {
+            return await fetchJSON(`${apiBase}/notification-channels`);
+        },
 
-// 重新检查二维码状态
-export async function recheckQRCodeAPI(sessionId) {
-    return await fetch(`${apiBase}/qr-login/recheck/${sessionId}`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${authToken}`
-        }
-    });
-}
+        addChannel: async function(data) {
+            return await this._request(`${apiBase}/notification-channels`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+        },
 
-// 登出
-export async function logoutAPI() {
-    return await fetch('/logout', {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${authToken}`
-        }
-    });
-}
+        updateChannel: async function(channelId, data) {
+            return await this._request(`${apiBase}/notification-channels/${channelId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+        },
 
-// 验证认证
-export async function verifyAuthAPI() {
-    return await fetch('/verify', {
-        headers: {
-            'Authorization': `Bearer ${authToken}`
+        deleteChannel: async function(channelId) {
+            return await this._request(`${apiBase}/notification-channels/${channelId}`, {
+                method: 'DELETE'
+            });
+        },
+
+        getMessageConfig: async function() {
+            return await fetchJSON(`${apiBase}/message-notifications`);
+        },
+
+        getAccountConfig: async function(accountId) {
+            return await fetchJSON(`${apiBase}/message-notifications/${accountId}`);
+        },
+
+        saveAccountConfig: async function(accountId, data) {
+            return await this._request(`${apiBase}/message-notifications/${accountId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+        },
+
+        deleteAccountConfig: async function(accountId) {
+            return await this._request(`${apiBase}/message-notifications/account/${accountId}`, {
+                method: 'DELETE'
+            });
         }
-    });
-}
+    },
+
+    cards: {
+        list: async function() {
+            return await fetchJSON(`${apiBase}/cards`);
+        },
+
+        get: async function(cardId) {
+            return await fetchJSON(`${apiBase}/cards/${cardId}`);
+        },
+
+        create: async function(cardData) {
+            return await this._request(`${apiBase}/cards`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(cardData)
+            });
+        },
+
+        update: async function(cardId, cardData) {
+            return await this._request(`${apiBase}/cards/${cardId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(cardData)
+            });
+        },
+
+        updateWithImage: async function(cardId, formData) {
+            return await this._request(`${apiBase}/cards/${cardId}/image`, {
+                method: 'PUT',
+                body: formData
+            });
+        },
+
+        delete: async function(cardId) {
+            return await this._request(`${apiBase}/cards/${cardId}`, {
+                method: 'DELETE'
+            });
+        },
+
+        uploadImage: async function(formData) {
+            return await this._request(`${apiBase}/upload-image`, {
+                method: 'POST',
+                body: formData
+            });
+        }
+    },
+
+    system: {
+        getSettings: async function() {
+            return await fetchJSON(`${apiBase}/user-settings`);
+        },
+
+        updateSettings: async function(settings) {
+            return await this._request(`${apiBase}/user-settings/theme_color`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings)
+            });
+        },
+
+        changePassword: async function(currentPassword, newPassword) {
+            return await this._request(`${apiBase}/change-admin-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    current_password: currentPassword,
+                    new_password: newPassword
+                })
+            });
+        },
+
+        getLogs: async function(lines = 100) {
+            return await fetchJSON(`${apiBase}/logs?lines=${lines}`);
+        },
+
+        clearLogs: async function() {
+            return await this._request(`${apiBase}/logs/clear`, { method: 'POST' });
+        },
+
+        getLogStats: async function() {
+            return await fetchJSON(`${apiBase}/logs/stats`);
+        },
+
+        reloadCache: async function() {
+            return await this._request(`${apiBase}/system/reload-cache`, { method: 'POST' });
+        }
+    },
+
+    backup: {
+        download: async function() {
+            return await this._request(`${apiBase}/admin/backup/download`);
+        },
+
+        upload: async function(formData) {
+            return await this._request(`${apiBase}/admin/backup/upload`, {
+                method: 'POST',
+                body: formData
+            });
+        },
+
+        export: async function() {
+            return await fetchJSON(`${apiBase}/backup/export`);
+        },
+
+        import: async function(formData) {
+            return await this._request(`${apiBase}/backup/import`, {
+                method: 'POST',
+                body: formData
+            });
+        }
+    },
+
+    qrLogin: {
+        generate: async function() {
+            return await this._request(`${apiBase}/qr-login/generate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+        },
+
+        checkStatus: async function(sessionId) {
+            return await this._request(`${apiBase}/qr-login/check/${sessionId}`);
+        },
+
+        recheck: async function(sessionId) {
+            return await this._request(`${apiBase}/qr-login/recheck/${sessionId}`, { method: 'POST' });
+        }
+    },
+
+    auth: {
+        logout: async function() {
+            return await this._request('/logout', { method: 'POST' });
+        },
+
+        verify: async function() {
+            return await this._request('/verify');
+        }
+    }
+};
+
+window.fetchJSON = fetchJSON;
+window.showToast = showToast;
+window.toggleLoading = toggleLoading;
+window.handleApiError = handleApiError;

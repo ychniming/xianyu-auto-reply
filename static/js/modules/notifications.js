@@ -1,6 +1,6 @@
 // 通知渠道管理模块 - 通知渠道和消息通知相关函数
 import { apiBase, authToken } from './utils.js';
-import { showToast, toggleLoading } from './api.js';
+import { } from './api.js';
 
 // 通知渠道类型配置
 export const channelTypeConfigs = {
@@ -206,7 +206,7 @@ export const channelTypeConfigs = {
 export function showAddChannelModal(type) {
     const config = channelTypeConfigs[type];
     if (!config) {
-        showToast('不支持的通知渠道类型', 'danger');
+        window.App.showToast('不支持的通知渠道类型', 'danger');
         return;
     }
 
@@ -288,13 +288,13 @@ export async function saveNotificationChannel() {
     const enabled = document.getElementById('channelEnabled').checked;
 
     if (!name.trim()) {
-        showToast('请输入渠道名称', 'warning');
+        window.App.showToast('请输入渠道名称', 'warning');
         return;
     }
 
     const config = channelTypeConfigs[type];
     if (!config) {
-        showToast('无效的渠道类型', 'danger');
+        window.App.showToast('无效的渠道类型', 'danger');
         return;
     }
 
@@ -312,7 +312,7 @@ export async function saveNotificationChannel() {
         }
 
         if (field.required && !value && field.type !== 'checkbox') {
-            showToast(`请填写${field.label}`, 'warning');
+            window.App.showToast(`请填写${field.label}`, 'warning');
             hasError = true;
             return;
         }
@@ -338,17 +338,17 @@ export async function saveNotificationChannel() {
         });
 
         if (response.ok) {
-            showToast('通知渠道添加成功', 'success');
+            window.App.showToast('通知渠道添加成功', 'success');
             const modal = bootstrap.Modal.getInstance(document.getElementById('addChannelModal'));
             modal.hide();
             loadNotificationChannels();
         } else {
             const error = await response.text();
-            showToast(`添加失败: ${error}`, 'danger');
+            window.App.showToast(`添加失败: ${error}`, 'danger');
         }
     } catch (error) {
         console.error('添加通知渠道失败:', error);
-        showToast('添加通知渠道失败', 'danger');
+        window.App.showToast('添加通知渠道失败', 'danger');
     }
 }
 
@@ -369,7 +369,7 @@ export async function loadNotificationChannels() {
         renderNotificationChannels(channels);
     } catch (error) {
         console.error('加载通知渠道失败:', error);
-        showToast('加载通知渠道失败', 'danger');
+        window.App.showToast('加载通知渠道失败', 'danger');
     }
 }
 
@@ -471,15 +471,15 @@ export async function deleteNotificationChannel(channelId) {
         });
 
         if (response.ok) {
-            showToast('通知渠道删除成功', 'success');
+            window.App.showToast('通知渠道删除成功', 'success');
             loadNotificationChannels();
         } else {
             const error = await response.text();
-            showToast(`删除失败: ${error}`, 'danger');
+            window.App.showToast(`删除失败: ${error}`, 'danger');
         }
     } catch (error) {
         console.error('删除通知渠道失败:', error);
-        showToast('删除通知渠道失败', 'danger');
+        window.App.showToast('删除通知渠道失败', 'danger');
     }
 }
 
@@ -500,7 +500,7 @@ export async function editNotificationChannel(channelId) {
         const channel = channels.find(c => c.id === channelId);
 
         if (!channel) {
-            showToast('通知渠道不存在', 'danger');
+            window.App.showToast('通知渠道不存在', 'danger');
             return;
         }
 
@@ -511,7 +511,7 @@ export async function editNotificationChannel(channelId) {
 
         const config = channelTypeConfigs[channelType];
         if (!config) {
-            showToast('不支持的渠道类型', 'danger');
+            window.App.showToast('不支持的渠道类型', 'danger');
             return;
         }
 
@@ -554,7 +554,7 @@ export async function editNotificationChannel(channelId) {
         modal.show();
     } catch (error) {
         console.error('编辑通知渠道失败:', error);
-        showToast('编辑通知渠道失败', 'danger');
+        window.App.showToast('编辑通知渠道失败', 'danger');
     }
 }
 
@@ -566,13 +566,13 @@ export async function updateNotificationChannel() {
     const enabled = document.getElementById('editChannelEnabled').checked;
 
     if (!name.trim()) {
-        showToast('请输入渠道名称', 'warning');
+        window.App.showToast('请输入渠道名称', 'warning');
         return;
     }
 
     const config = channelTypeConfigs[type];
     if (!config) {
-        showToast('无效的渠道类型', 'danger');
+        window.App.showToast('无效的渠道类型', 'danger');
         return;
     }
 
@@ -590,7 +590,7 @@ export async function updateNotificationChannel() {
         }
 
         if (field.required && !value && field.type !== 'checkbox') {
-            showToast(`请填写${field.label}`, 'warning');
+            window.App.showToast(`请填写${field.label}`, 'warning');
             hasError = true;
             return;
         }
@@ -615,17 +615,17 @@ export async function updateNotificationChannel() {
         });
 
         if (response.ok) {
-            showToast('通知渠道更新成功', 'success');
+            window.App.showToast('通知渠道更新成功', 'success');
             const modal = bootstrap.Modal.getInstance(document.getElementById('editChannelModal'));
             modal.hide();
             loadNotificationChannels();
         } else {
             const error = await response.text();
-            showToast(`更新失败: ${error}`, 'danger');
+            window.App.showToast(`更新失败: ${error}`, 'danger');
         }
     } catch (error) {
         console.error('更新通知渠道失败:', error);
-        showToast('更新通知渠道失败', 'danger');
+        window.App.showToast('更新通知渠道失败', 'danger');
     }
 }
 
@@ -660,7 +660,7 @@ export async function loadMessageNotifications() {
         renderMessageNotifications(accounts, notifications);
     } catch (error) {
         console.error('加载消息通知配置失败:', error);
-        showToast('加载消息通知配置失败', 'danger');
+        window.App.showToast('加载消息通知配置失败', 'danger');
     }
 }
 
@@ -737,7 +737,7 @@ export async function configAccountNotification(accountId) {
         const channels = await channelsResponse.json();
 
         if (channels.length === 0) {
-            showToast('请先添加通知渠道', 'warning');
+            window.App.showToast('请先添加通知渠道', 'warning');
             return;
         }
 
@@ -779,7 +779,7 @@ export async function configAccountNotification(accountId) {
         modal.show();
     } catch (error) {
         console.error('配置账号通知失败:', error);
-        showToast('配置账号通知失败', 'danger');
+        window.App.showToast('配置账号通知失败', 'danger');
     }
 }
 
@@ -798,15 +798,15 @@ export async function deleteAccountNotification(accountId) {
         });
 
         if (response.ok) {
-            showToast('通知配置删除成功', 'success');
+            window.App.showToast('通知配置删除成功', 'success');
             loadMessageNotifications();
         } else {
             const error = await response.text();
-            showToast(`删除失败: ${error}`, 'danger');
+            window.App.showToast(`删除失败: ${error}`, 'danger');
         }
     } catch (error) {
         console.error('删除通知配置失败:', error);
-        showToast('删除通知配置失败', 'danger');
+        window.App.showToast('删除通知配置失败', 'danger');
     }
 }
 
@@ -817,7 +817,7 @@ export async function saveAccountNotification() {
     const enabled = document.getElementById('notificationEnabled').checked;
 
     if (!channelId) {
-        showToast('请选择通知渠道', 'warning');
+        window.App.showToast('请选择通知渠道', 'warning');
         return;
     }
 
@@ -835,17 +835,17 @@ export async function saveAccountNotification() {
         });
 
         if (response.ok) {
-            showToast('通知配置保存成功', 'success');
+            window.App.showToast('通知配置保存成功', 'success');
             const modal = bootstrap.Modal.getInstance(document.getElementById('configNotificationModal'));
             modal.hide();
             loadMessageNotifications();
         } else {
             const error = await response.text();
-            showToast(`保存失败: ${error}`, 'danger');
+            window.App.showToast(`保存失败: ${error}`, 'danger');
         }
     } catch (error) {
         console.error('保存通知配置失败:', error);
-        showToast('保存通知配置失败', 'danger');
+        window.App.showToast('保存通知配置失败', 'danger');
     }
 }
 
@@ -868,7 +868,7 @@ async function handleGetOpenID() {
     const statusDiv = document.getElementById('get_openid_status');
     
     if (!appIdInput || !botSecretInput) {
-        showToast('找不到输入框', 'danger');
+        window.App.showToast('找不到输入框', 'danger');
         return;
     }
     
@@ -876,13 +876,13 @@ async function handleGetOpenID() {
     const botSecret = botSecretInput.value.trim();
     
     if (!appId) {
-        showToast('请先输入机器人 AppID', 'warning');
+        window.App.showToast('请先输入机器人 AppID', 'warning');
         appIdInput.focus();
         return;
     }
     
     if (!botSecret) {
-        showToast('请先输入机器人密钥', 'warning');
+        window.App.showToast('请先输入机器人密钥', 'warning');
         botSecretInput.focus();
         return;
     }
@@ -1010,7 +1010,7 @@ function startOpenIDPolling(sessionId, openidInput, statusDiv, btn) {
                     btn.innerHTML = '<i class="bi bi-key"></i> 获取 OpenID';
                 }
                 
-                showToast('OpenID 获取成功！', 'success');
+                window.App.showToast('OpenID 获取成功！', 'success');
                 
             } else if (result.status === 'error' || result.status === 'timeout') {
                 clearInterval(openidPollingTimer);
@@ -1046,7 +1046,7 @@ async function handleTestReply() {
     const statusDiv = document.getElementById('test_reply_status');
     
     if (!appIdInput || !botSecretInput || !openidInput) {
-        showToast('找不到输入框', 'danger');
+        window.App.showToast('找不到输入框', 'danger');
         return;
     }
     
@@ -1055,19 +1055,19 @@ async function handleTestReply() {
     const userOpenid = openidInput.value.trim();
     
     if (!appId) {
-        showToast('请先输入机器人 AppID', 'warning');
+        window.App.showToast('请先输入机器人 AppID', 'warning');
         appIdInput.focus();
         return;
     }
     
     if (!botSecret) {
-        showToast('请先输入机器人密钥', 'warning');
+        window.App.showToast('请先输入机器人密钥', 'warning');
         botSecretInput.focus();
         return;
     }
     
     if (!userOpenid) {
-        showToast('请先获取或输入接收用户 OpenID', 'warning');
+        window.App.showToast('请先获取或输入接收用户 OpenID', 'warning');
         openidInput.focus();
         return;
     }
@@ -1113,7 +1113,7 @@ async function handleTestReply() {
                     </div>
                 `;
             }
-            showToast('测试消息发送成功！', 'success');
+            window.App.showToast('测试消息发送成功！', 'success');
         } else {
             if (statusDiv) {
                 statusDiv.innerHTML = `
@@ -1124,7 +1124,7 @@ async function handleTestReply() {
                     </div>
                 `;
             }
-            showToast(`发送失败: ${result.error || '未知错误'}`, 'danger');
+            window.App.showToast(`发送失败: ${result.error || '未知错误'}`, 'danger');
         }
         
     } catch (error) {
@@ -1132,7 +1132,7 @@ async function handleTestReply() {
         if (statusDiv) {
             statusDiv.innerHTML = `<div class="alert alert-danger mb-0"><i class="bi bi-exclamation-triangle me-2"></i>发送失败: ${error.message}</div>`;
         }
-        showToast(`发送失败: ${error.message}`, 'danger');
+        window.App.showToast(`发送失败: ${error.message}`, 'danger');
     } finally {
         if (btn) {
             btn.disabled = false;
@@ -1140,3 +1140,5 @@ async function handleTestReply() {
         }
     }
 }
+
+

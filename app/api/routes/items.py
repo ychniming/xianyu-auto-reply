@@ -8,6 +8,7 @@ from typing import Optional, Dict, Any, List
 from loguru import logger
 
 from app.api.dependencies import get_current_user
+from app.utils.item_search import search_xianyu_items, search_multiple_pages_xianyu, get_item_detail_from_api
 
 router = APIRouter(prefix="", tags=["商品管理"])
 
@@ -49,8 +50,6 @@ async def search_items(
 ):
     """搜索闲鱼商品"""
     try:
-        from app.utils.item_search import search_xianyu_items
-
         result = await search_xianyu_items(
             keyword=search_request.keyword,
             page=search_request.page,
@@ -77,8 +76,6 @@ async def search_multiple_pages(
 ):
     """搜索多页闲鱼商品"""
     try:
-        from app.utils.item_search import search_multiple_pages_xianyu
-
         result = await search_multiple_pages_xianyu(
             keyword=search_request.keyword,
             total_pages=search_request.total_pages
@@ -106,8 +103,6 @@ async def get_public_item_detail(
 ):
     """获取公开商品详情（通过外部API）"""
     try:
-        from app.utils.item_search import get_item_detail_from_api
-
         result = await get_item_detail_from_api(item_id)
         return result
     except Exception as e:
@@ -157,7 +152,6 @@ def delete_item(cookie_id: str, item_id: str, current_user: Optional[Dict[str, A
     """删除商品信息"""
     try:
         from app.repositories import db_manager
-        # 商品删除通常是通过标记删除，这里简化处理
         return {'msg': 'deleted'}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -176,11 +170,10 @@ def batch_delete_items(ids: List[str], current_user: Optional[Dict[str, Any]] = 
 async def get_all_items_from_account(cookie_id: str, current_user: Optional[Dict[str, Any]] = Depends(get_current_user)):
     """从账号获取所有商品"""
     try:
-        from src import cookie_manager
+        from app.core import cookie_manager
         if cookie_manager.manager is None:
             raise HTTPException(status_code=500, detail="CookieManager未初始化")
 
-        # 调用XianyuAutoAsync获取商品列表
         return {'msg': 'success', 'items': []}
     except HTTPException:
         raise

@@ -1,11 +1,11 @@
 // 系统管理模块 - 系统配置、备份、缓存管理相关函数
 import { apiBase, authToken } from './utils.js';
-import { showToast, toggleLoading, fetchJSON } from './api.js';
+import { fetchJSON } from './api.js';
 import { clearKeywordCache } from './utils.js';
 
 // 加载表格数据（支持多种类型）
 export async function loadTableData(tableType) {
-    toggleLoading(true);
+    window.App.toggleLoading(true);
 
     try {
         switch (tableType) {
@@ -29,16 +29,16 @@ export async function loadTableData(tableType) {
         }
     } catch (error) {
         console.error(`加载 ${tableType} 表格数据失败:`, error);
-        showToast(`加载数据失败`, 'danger');
+        window.App.showToast(`加载数据失败`, 'danger');
     } finally {
-        toggleLoading(false);
+        window.App.toggleLoading(false);
     }
 }
 
 // 刷新表格数据
 export async function refreshTableData(tableType) {
     await loadTableData(tableType);
-    showToast(`${getTableName(tableType)}数据已刷新`, 'success');
+    window.App.showToast(`${getTableName(tableType)}数据已刷新`, 'success');
 }
 
 // 获取表格名称
@@ -80,7 +80,7 @@ export function confirmDeleteAll(deleteType) {
 // 下载数据库备份
 export async function downloadDatabaseBackup() {
     try {
-        showToast('正在准备数据库备份...', 'info');
+        window.App.showToast('正在准备数据库备份...', 'info');
 
         const response = await fetch(`${apiBase}/system/backup/download`, {
             method: 'POST',
@@ -109,13 +109,13 @@ export async function downloadDatabaseBackup() {
             window.URL.revokeObjectURL(url);
             a.remove();
 
-            showToast('数据库备份下载成功', 'success');
+            window.App.showToast('数据库备份下载成功', 'success');
         } else {
             throw new Error(`HTTP ${response.status}`);
         }
     } catch (error) {
         console.error('下载数据库备份失败:', error);
-        showToast('下载数据库备份失败', 'danger');
+        window.App.showToast('下载数据库备份失败', 'danger');
     }
 }
 
@@ -123,7 +123,7 @@ export async function downloadDatabaseBackup() {
 export async function uploadDatabaseBackup() {
     const fileInput = document.getElementById('backupFileInput');
     if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-        showToast('请选择备份文件', 'warning');
+        window.App.showToast('请选择备份文件', 'warning');
         return false;
     }
 
@@ -131,7 +131,7 @@ export async function uploadDatabaseBackup() {
 
     // 验证文件类型
     if (!file.name.endsWith('.db') && !file.name.endsWith('.sqlite')) {
-        showToast('请选择 .db 或 .sqlite 格式的备份文件', 'warning');
+        window.App.showToast('请选择 .db 或 .sqlite 格式的备份文件', 'warning');
         return false;
     }
 
@@ -141,7 +141,7 @@ export async function uploadDatabaseBackup() {
     }
 
     try {
-        showToast('正在上传备份文件...', 'info');
+        window.App.showToast('正在上传备份文件...', 'info');
 
         const formData = new FormData();
         formData.append('backup', file);
@@ -157,21 +157,21 @@ export async function uploadDatabaseBackup() {
         if (response.ok) {
             const data = await response.json();
             if (data.success) {
-                showToast('数据库备份上传成功，系统将重新加载...', 'success');
+                window.App.showToast('数据库备份上传成功，系统将重新加载...', 'success');
                 // 重新加载页面以应用新数据
                 setTimeout(() => {
                     window.location.reload();
                 }, 1500);
                 return true;
             } else {
-                showToast(data.message || '上传失败', 'danger');
+                window.App.showToast(data.message || '上传失败', 'danger');
             }
         } else {
             throw new Error(`HTTP ${response.status}`);
         }
     } catch (error) {
         console.error('上传数据库备份失败:', error);
-        showToast('上传数据库备份失败', 'danger');
+        window.App.showToast('上传数据库备份失败', 'danger');
     }
 
     return false;
@@ -193,17 +193,17 @@ export async function reloadSystemCache() {
                 // 清除本地关键词缓存
                 clearKeywordCache();
 
-                showToast('系统缓存已重新加载', 'success');
+                window.App.showToast('系统缓存已重新加载', 'success');
                 return true;
             } else {
-                showToast(data.message || '重载失败', 'danger');
+                window.App.showToast(data.message || '重载失败', 'danger');
             }
         } else {
             throw new Error(`HTTP ${response.status}`);
         }
     } catch (error) {
         console.error('重新加载系统缓存失败:', error);
-        showToast('重新加载系统缓存失败', 'danger');
+        window.App.showToast('重新加载系统缓存失败', 'danger');
     }
 
     return false;
@@ -233,17 +233,17 @@ export async function toggleMaintenanceMode(enabled) {
         if (response.ok) {
             const data = await response.json();
             if (data.success) {
-                showToast(`维护模式已${enabled ? '开启' : '关闭'}`, 'success');
+                window.App.showToast(`维护模式已${enabled ? '开启' : '关闭'}`, 'success');
                 return true;
             } else {
-                showToast(data.message || '操作失败', 'danger');
+                window.App.showToast(data.message || '操作失败', 'danger');
             }
         } else {
             throw new Error(`HTTP ${response.status}`);
         }
     } catch (error) {
         console.error('切换维护模式失败:', error);
-        showToast('切换维护模式失败', 'danger');
+        window.App.showToast('切换维护模式失败', 'danger');
     }
 
     return false;
@@ -276,7 +276,7 @@ export async function getSystemStatus() {
 export async function showSystemInfo() {
     const status = await getSystemStatus();
     if (!status) {
-        showToast('获取系统信息失败', 'danger');
+        window.App.showToast('获取系统信息失败', 'danger');
         return;
     }
 
@@ -382,3 +382,5 @@ async function loadDeliveryTable() {
         await loadDeliveryRules();
     }
 }
+
+

@@ -290,7 +290,7 @@ class AppSettings(BaseSettings):
         description="API server host"
     )
     api_port: int = Field(
-        default=8080,
+        default=9000,
         description="API server port"
     )
     enable_docs: bool = Field(

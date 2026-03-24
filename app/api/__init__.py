@@ -107,7 +107,9 @@ def create_app() -> FastAPI:
     setup_middleware(app)
     logger.info("Rate limiting middleware initialized: 100 requests/minute default limit")
 
-    static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static')
+    from pathlib import Path
+    project_root = Path(__file__).parent.parent.parent
+    static_dir = str(project_root / 'static')
 
     backup_router = APIRouter(prefix="", tags=["备份"])
 

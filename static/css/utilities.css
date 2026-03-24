@@ -7,11 +7,11 @@
 
 .cookie-value {
     font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
-    font-size: 0.85rem;
-    background: #f8fafc;
+    font-size: var(--font-sm);
+    background: var(--bg-primary);
     padding: 0.75rem;
-    border-radius: 8px;
-    border: 1px solid #e5e7eb;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
     word-break: break-all;
     line-height: 1.4;
     max-height: 120px;
@@ -22,12 +22,12 @@
 .cookie-id {
     font-weight: 600;
     color: var(--primary-color);
-    font-size: 1rem;
+    font-size: var(--font-base);
 }
 
 @media (max-width: 768px) {
     .cookie-value {
-        font-size: 0.75rem;
+        font-size: var(--font-xs);
         max-height: 80px;
     }
 }
@@ -35,15 +35,15 @@
 /* ========== 关键词编辑器 ========== */
 
 .keyword-editor {
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xs);
 }
 
 /* ========== 关键词输入组 ========== */
 
 .keyword-input-group {
     display: flex;
-    gap: 15px;
+    gap: var(--spacing-md);
     align-items: end;
     flex-wrap: wrap;
 }
@@ -61,22 +61,22 @@
 
     .keyword-input-group .add-btn {
         margin-left: 0;
-        margin-top: 10px;
+        margin-top: var(--spacing-sm);
     }
 }
 
 /* ========== 图片预览 ========== */
 
 .image-preview {
-    margin-top: 10px;
+    margin-top: var(--spacing-sm);
 }
 
 .preview-container {
-    padding: 10px;
-    border: 2px dashed #ddd;
-    border-radius: 8px;
+    padding: var(--spacing-sm);
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius-md);
     text-align: center;
-    background-color: #f8f9fa;
+    background-color: var(--gray-50);
 }
 
 /* ========== 关键词类型徽章 ========== */
@@ -84,20 +84,20 @@
 .keyword-type-badge {
     display: inline-block;
     padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.75rem;
+    border-radius: var(--radius-lg);
+    font-size: var(--font-xs);
     font-weight: 500;
-    margin-left: 8px;
+    margin-left: var(--spacing-sm);
 }
 
 .keyword-type-text {
-    background-color: #e3f2fd;
-    color: #1976d2;
+    background-color: var(--keyword-text-bg);
+    color: var(--keyword-text-text);
 }
 
 .keyword-type-image {
-    background-color: #f3e5f5;
-    color: #7b1fa2;
+    background-color: var(--keyword-image-bg);
+    color: var(--keyword-image-text);
 }
 
 /* ========== 关键词图片预览 ========== */
@@ -105,26 +105,26 @@
 .keyword-image-preview {
     max-width: 60px;
     max-height: 60px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
     cursor: pointer;
 }
 
 .keyword-image-preview:hover {
-    border-color: #007bff;
+    border-color: var(--primary-color);
     transform: scale(1.05);
-    transition: all 0.2s ease;
+    transition: all var(--transition-fast);
 }
 
 /* ========== 图片按钮 ========== */
 
 .btn-image {
-    background: linear-gradient(135deg, #28a745, #20c997);
+    background: linear-gradient(135deg, var(--qr-success) 0%, var(--qr-success-dark) 100%);
     border: none;
-    margin-left: 10px;
+    margin-left: var(--spacing-sm);
 }
 
 .btn-image:hover {
-    background: linear-gradient(135deg, #218838, #1ea085);
+    background: linear-gradient(135deg, var(--qr-success-hover) 0%, var(--qr-success-hover-dark) 100%);
     transform: translateY(-1px);
 }

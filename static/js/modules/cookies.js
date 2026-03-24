@@ -1,16 +1,16 @@
 // Cookie管理模块 - 账号/Cookie相关函数
 import { apiBase, authToken, clearKeywordCache } from './utils.js';
-import { showToast, toggleLoading, fetchJSON } from './api.js';
+import { fetchJSON } from './api.js';
 import { refreshAccountList, loadAccountKeywords, updateAccountBadge } from './keywords.js';
 
 // 加载Cookie列表
 export async function loadCookies() {
     try {
-    toggleLoading(true);
+    window.App.toggleLoading(true);
     const tbody = document.querySelector('#cookieTable tbody');
     tbody.innerHTML = '';
 
-    const cookieDetails = await fetchJSON(apiBase + '/cookies/details');
+    const cookieDetails = await window.API.cookies.list();
     const cookiesArray = cookieDetails.data || cookieDetails;
 
     if (cookiesArray.length === 0) {
@@ -31,34 +31,21 @@ export async function loadCookies() {
         cookiesArray.map(async (cookie) => {
         try {
             // 获取关键词数量
-            const keywordsResponse = await fetch(`${apiBase}/keywords/${cookie.id}`, {
-            headers: { 'Authorization': `Bearer ${authToken}` }
-            });
-
-            let keywordCount = 0;
-            if (keywordsResponse.ok) {
-            const keywordsData = await keywordsResponse.json();
-            keywordCount = keywordsData.length;
-            }
-
-            // 获取默认回复设置
-            const defaultReplyResponse = await fetch(`${apiBase}/default-replies/${cookie.id}`, {
-            headers: { 'Authorization': `Bearer ${authToken}` }
-            });
+            const keywordsData = await window.API.keywords.list(cookie.id);
+            const keywordCount = Array.isArray(keywordsData) ? keywordsData.length : 0;
 
             let defaultReply = { enabled: false, reply_content: '' };
-            if (defaultReplyResponse.ok) {
-            defaultReply = await defaultReplyResponse.json();
+            try {
+                defaultReply = await window.API.defaultReplies.get(cookie.id) || defaultReply;
+            } catch (e) {
+                console.warn(`获取账号 ${cookie.id} 默认回复失败:`, e);
             }
 
-            // 获取AI回复设置
-            const aiReplyResponse = await fetch(`${apiBase}/ai-reply-settings/${cookie.id}`, {
-            headers: { 'Authorization': `Bearer ${authToken}` }
-            });
-
             let aiReply = { ai_enabled: false, model_name: 'qwen-plus' };
-            if (aiReplyResponse.ok) {
-            aiReply = await aiReplyResponse.json();
+            try {
+                aiReply = await window.API.ai.getSettings(cookie.id) || aiReply;
+            } catch (e) {
+                console.warn(`获取账号 ${cookie.id} AI回复设置失败:`, e);
             }
 
             return {
@@ -171,9 +158,9 @@ export async function loadCookies() {
         const cookieValue = this.textContent;
         if (cookieValue && cookieValue !== '未设置') {
             navigator.clipboard.writeText(cookieValue).then(() => {
-            showToast('Cookie已复制到剪贴板', 'success');
+            window.App.showToast('Cookie已复制到剪贴板', 'success');
             }).catch(() => {
-            showToast('复制失败，请手动复制', 'error');
+            window.App.showToast('复制失败，请手动复制', 'error');
             });
         }
         });
@@ -182,19 +169,19 @@ export async function loadCookies() {
     } catch (err) {
     // 错误已在fetchJSON中处理
     } finally {
-    toggleLoading(false);
+    window.App.toggleLoading(false);
     }
 }
 
 // 复制Cookie
 export function copyCookie(id, value) {
     if (!value || value === '未设置') {
-    showToast('该账号暂无Cookie值', 'warning');
+    window.App.showToast('该账号暂无Cookie值', 'warning');
     return;
     }
 
     navigator.clipboard.writeText(value).then(() => {
-    showToast(`账号 "${id}" 的Cookie已复制到剪贴板`, 'success');
+    window.App.showToast(`账号 "${id}" 的Cookie已复制到剪贴板`, 'success');
     }).catch(() => {
     // 降级方案：创建临时文本框
     const textArea = document.createElement('textarea');
@@ -203,9 +190,9 @@ export function copyCookie(id, value) {
     textArea.select();
     try {
         document.execCommand('copy');
-        showToast(`账号 "${id}" 的Cookie已复制到剪贴板`, 'success');
+        window.App.showToast(`账号 "${id}" 的Cookie已复制到剪贴板`, 'success');
     } catch (err) {
-        showToast('复制失败，请手动复制', 'error');
+        window.App.showToast('复制失败，请手动复制', 'error');
     }
     document.body.removeChild(textArea);
     });
@@ -216,8 +203,8 @@ export async function delCookie(id) {
     if (!confirm(`确定要删除账号 "${id}" 吗？此操作不可恢复。`)) return;
 
     try {
-    await fetchJSON(apiBase + `/cookies/${id}`, { method: 'DELETE' });
-    showToast(`账号 "${id}" 已删除`, 'success');
+    await window.API.cookies.delete(id);
+    window.App.showToast(`账号 "${id}" 已删除`, 'success');
     loadCookies();
     } catch (err) {
     // 错误已在fetchJSON中处理
@@ -298,32 +285,28 @@ export async function saveCookieInline(id) {
     const newValue = input.value.trim();
 
     if (!newValue) {
-    showToast('Cookie值不能为空', 'warning');
+    window.App.showToast('Cookie值不能为空', 'warning');
     return;
     }
 
     try {
-    toggleLoading(true);
+    window.App.toggleLoading(true);
 
-    await fetchJSON(apiBase + `/cookies/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+    await window.API.cookies.update(id, {
         id: id,
         value: newValue
-        })
     });
 
-    showToast(`账号 "${id}" Cookie已更新`, 'success');
+    window.App.showToast(`账号 "${id}" Cookie已更新`, 'success');
     loadCookies(); // 重新加载列表
 
     } catch (err) {
     console.error('Cookie更新失败:', err);
-    showToast(`Cookie更新失败: ${err.message || '未知错误'}`, 'danger');
+    window.App.showToast(`Cookie更新失败: ${err.message || '未知错误'}`, 'danger');
     // 恢复原内容
     cancelCookieEdit(id);
     } finally {
-    toggleLoading(false);
+    window.App.toggleLoading(false);
     }
 }
 
@@ -351,23 +334,14 @@ export function cancelCookieEdit(id) {
 // 切换账号启用/禁用状态
 export async function toggleAccountStatus(accountId, enabled) {
     try {
-    toggleLoading(true);
+        window.App.toggleLoading(true);
 
-    // 这里需要调用后端API来更新账号状态
-    // 由于当前后端可能没有enabled字段，我们先在前端模拟
-    // 实际项目中需要后端支持
+        // 这里需要调用后端API来更新账号状态
+        // 由于当前后端可能没有enabled字段，我们先在前端模拟
+        // 实际项目中需要后端支持
 
-    const response = await fetch(`${apiBase}/cookies/${accountId}/status`, {
-        method: 'PUT',
-        headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify({ enabled: enabled })
-    });
-
-    if (response.ok) {
-        showToast(`账号 "${accountId}" 已${enabled ? '启用' : '禁用'}`, 'success');
+        await window.API.cookies.toggleStatus(accountId, enabled);
+        window.App.showToast(`账号 "${accountId}" 已${enabled ? '启用' : '禁用'}`, 'success');
 
         // 清除相关缓存，确保数据一致性
         clearKeywordCache();
@@ -384,35 +358,27 @@ export async function toggleAccountStatus(accountId, enabled) {
         if (!enabled) {
             // 更新徽章显示禁用状态
             updateAccountBadge(accountId, false);
-            showToast('账号已禁用，配置的关键词不会参与自动回复', 'warning');
+            window.App.showToast('账号已禁用，配置的关键词不会参与自动回复', 'warning');
         } else {
             // 更新徽章显示启用状态
             updateAccountBadge(accountId, true);
-            showToast('账号已启用，配置的关键词将参与自动回复', 'success');
+            window.App.showToast('账号已启用，配置的关键词将参与自动回复', 'success');
         }
         }
-
-    } else {
-        // 如果后端不支持，先在前端模拟
-        console.warn('后端暂不支持账号状态切换，使用前端模拟');
-        showToast(`账号 "${accountId}" 已${enabled ? '启用' : '禁用'} (前端模拟)`, enabled ? 'success' : 'warning');
-        updateAccountRowStatus(accountId, enabled);
-    }
 
     } catch (error) {
-    console.error('切换账号状态失败:', error);
+        // 如果后端不支持，先在前端模拟
+        console.warn('切换账号状态失败，使用前端模拟:', error);
+        window.App.showToast(`账号 "${accountId}" 已${enabled ? '启用' : '禁用'} (本地模拟)`, enabled ? 'success' : 'warning');
+        updateAccountRowStatus(accountId, enabled);
 
-    // 后端不支持时的降级处理
-    showToast(`账号 "${accountId}" 已${enabled ? '启用' : '禁用'} (本地模拟)`, enabled ? 'success' : 'warning');
-    updateAccountRowStatus(accountId, enabled);
-
-    // 恢复切换按钮状态
-    const toggle = document.querySelector(`input[onchange*="${accountId}"]`);
-    if (toggle) {
-        toggle.checked = enabled;
-    }
+        // 恢复切换按钮状态
+        const toggle = document.querySelector(`input[onchange*="${accountId}"]`);
+        if (toggle) {
+            toggle.checked = enabled;
+        }
     } finally {
-    toggleLoading(false);
+        window.App.toggleLoading(false);
     }
 }
 
@@ -454,45 +420,25 @@ export function updateAccountRowStatus(accountId, enabled) {
 // 切换自动确认发货状态
 export async function toggleAutoConfirm(accountId, enabled) {
     try {
-    toggleLoading(true);
+        window.App.toggleLoading(true);
 
-    const response = await fetch(`${apiBase}/cookies/${accountId}/auto-confirm`, {
-        method: 'PUT',
-        headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify({ auto_confirm: enabled })
-    });
-
-    if (response.ok) {
-        const result = await response.json();
-        showToast(result.message, 'success');
+        const result = await window.API.cookies.toggleAutoConfirm(accountId, enabled);
+        window.App.showToast(result.message || `账号 "${accountId}" 自动确认发货已${enabled ? '开启' : '关闭'}`, 'success');
 
         // 更新界面显示
         updateAutoConfirmRowStatus(accountId, enabled);
-    } else {
-        const error = await response.json();
-        showToast(error.detail || '更新自动确认发货设置失败', 'error');
+
+    } catch (error) {
+        console.error('切换自动确认发货状态失败:', error);
+        window.App.showToast('更新自动确认发货设置失败', 'error');
 
         // 恢复切换按钮状态
         const toggle = document.querySelector(`input[onchange*="toggleAutoConfirm('${accountId}'"]`);
         if (toggle) {
-        toggle.checked = !enabled;
+            toggle.checked = !enabled;
         }
-    }
-
-    } catch (error) {
-    console.error('切换自动确认发货状态失败:', error);
-    showToast('网络错误，请稍后重试', 'error');
-
-    // 恢复切换按钮状态
-    const toggle = document.querySelector(`input[onchange*="toggleAutoConfirm('${accountId}'"]`);
-    if (toggle) {
-        toggle.checked = !enabled;
-    }
     } finally {
-    toggleLoading(false);
+        window.App.toggleLoading(false);
     }
 }
 
@@ -533,5 +479,6 @@ export function goToAutoReply(accountId) {
     }
     }, 100);
 
-    showToast(`已切换到自动回复页面，账号 "${accountId}" 已选中`, 'info');
+    window.App.showToast(`已切换到自动回复页面，账号 "${accountId}" 已选中`, 'info');
 }
+
