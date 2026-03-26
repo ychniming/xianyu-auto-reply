@@ -4,12 +4,12 @@
 """
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field, validator, constr
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 from loguru import logger
 import re
 
 from app.api.dependencies import get_current_user, check_cookie_owner
-from app.api.response import success, error, created, updated, deleted
+from app.api.response import success, created, updated, deleted
 
 router = APIRouter(prefix="", tags=["账号管理"])
 

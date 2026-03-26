@@ -8,8 +8,8 @@
 
 | 环境 | 用途 | 访问地址 |
 |------|------|---------|
-| 生产环境 | 正式服务 | https://xianyu.niming.cyou |
-| 宝塔面板 | 服务器管理 | https://43.134.89.158:18788/590183d8 |
+| 生产环境 | 正式服务 | http://122.51.107.43:8080 |
+| 宝塔面板 | 服务器管理（旧服务器） | http://43.134.89.158:18788/login |
 | 本地开发 | 本地测试 | http://localhost:8080 |
 
 ---
@@ -48,8 +48,8 @@
 ### 生产环境部署
 
 ```bash
-# 1. SSH 连接服务器
-ssh -i ~/.ssh/niming.pem ubuntu@43.134.89.158
+# 1. SSH 连接服务器（新服务器）
+ssh -i ~/.ssh/niming2.pem ubuntu@122.51.107.43
 
 # 2. 进入项目目录
 cd /www/wwwroot/xianyu-auto-reply
@@ -58,7 +58,7 @@ cd /www/wwwroot/xianyu-auto-reply
 git pull origin main
 
 # 4. 备份数据
-sudo cp /www/wwwroot/data/xianyu_data.db /root/backups/xianyu_data_$(date +%Y%m%d).db
+sudo cp /www/wwwroot/xianyu-auto-reply/data/xianyu_data.db /root/backups/xianyu_data_$(date +%Y%m%d).db
 
 # 5. 重启服务
 sudo docker-compose -f deploy/docker-compose.yml down
@@ -69,7 +69,7 @@ sudo docker logs xianyu-auto-reply --tail 50
 curl -s http://localhost:8080/health
 
 # 7. 检查外部访问
-curl -s https://xianyu.niming.cyou/health
+curl -s http://122.51.107.43:8080/health
 ```
 
 ### 回滚操作
@@ -116,7 +116,7 @@ jobs:
       - name: Deploy to production
         uses: appleboy/ssh-action@master
         with:
-          host: 43.134.89.158
+          host: 122.51.107.43
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |

@@ -1,0 +1,179 @@
+[
+  {
+    "file": "D:\\我的\\创业\\xianyu-auto-reply-main\\docs\\INDEX.md",
+    "lastUpdated": "2026-03-25",
+    "days": 0,
+    "grade": "A",
+    "status": "pass"
+  },
+  {
+    "file": "D:\\我的\\创业\\xianyu-auto-reply-main\\docs\\architecture\\domains.md",
+    "lastUpdated": "2026-03-25",
+    "days": 0,
+    "grade": "A",
+    "status": "pass"
+  },
+  {
+    "file": "D:\\我的\\创业\\xianyu-auto-reply-main\\docs\\architecture\\layers.md",
+    "lastUpdated": "2026-03-25",
+    "days": 0,
+    "grade": "A",
+    "status": "pass"
+  },
+  {
+    "file": "D:\\我的\\创业\\xianyu-auto-reply-main\\docs\\architecture\\overview.md",
+    "lastUpdated": "2026-03-25",
+    "days": 0,
+    "grade": "A",
+    "status": "pass"
+  },
+  {
+    "file": "D:\\我的\\创业\\xianyu-auto-reply-main\\docs\\deployment\\CI_CD_DEPLOYMENT_PLAN.md",
+    "lastUpdated": "2026-03-25",
+    "days": 0,
+    "grade": "A",
+    "status": "pass"
+  },
+  {
+    "file": "D:\\我的\\创业\\xianyu-auto-reply-main\\docs\\deployment\\DEPLOYMENT_COMPARISON.md",
+    "lastUpdated": "2026-03-25",
+    "days": 0,
+    "grade": "A",
+    "status": "pass"
+  },
+  {
+    "file": "D:\\我的\\创业\\xianyu-auto-reply-main\\docs\\deployment\\GITHUB_ACTIONS_SETUP.md",
+    "lastUpdated": "2026-03-25",
+    "days": 0,
+    "grade": "A",
+    "status": "pass"
+  },
+  {
+    "file": "D:\\我的\\创业\\xianyu-auto-reply-main\\docs\\deployment\\NEW_SERVER_DEPLOY.md",
+    "lastUpdated": "2026-03-25",
+    "days": 0,
+    "grade": "A",
+    "status": "pass"
+  },
+  {
+    "file": "D:\\我的\\创业\\xianyu-auto-reply-main\\docs\\deployment\\README.md",
+    "lastUpdated": "2026-03-25",
+    "days": 0,
+    "grade": "A",
+    "status": "pass"
+  },
+  {
+    "file": "D:\\我的\\创业\\xianyu-auto-reply-main\\docs\\guides\\deployment.md",
+    "lastUpdated": "2026-03-25",
+    "days": 0,
+    "grade": "A",
+    "status": "pass"
+  },
+  {
+    "file": "D:\\我的\\创业\\xianyu-auto-reply-main\\docs\\guides\\development.md",
+    "lastUpdated": "2026-03-25",
+    "days": 0,
+    "grade": "A",
+    "status": "pass"
+  },
+  {
+    "file": "D:\\我的\\创业\\xianyu-auto-reply-main\\docs\\guides\\operations.md",
+    "lastUpdated": "2026-03-25",
+    "days": 0,
+    "grade": "A",
+    "status": "pass"
+  },
+  {
+    "file": "D:\\我的\\创业\\xianyu-auto-reply-main\\docs\\reference\\api.md",
+    "lastUpdated": "2026-03-25",
+    "days": 0,
+    "grade": "A",
+    "status": "pass"
+  },
+  {
+    "file": "D:\\我的\\创业\\xianyu-auto-reply-main\\docs\\reference\\config.md",
+    "lastUpdated": "2026-03-25",
+    "days": 0,
+    "grade": "A",
+    "status": "pass"
+  },
+  {
+    "file": "D:\\我的\\创业\\xianyu-auto-reply-main\\docs\\reference\\deletion-log.md",
+    "lastUpdated": null,
+    "days": null,
+    "grade": "D",
+    "status": "fail",
+    "error": "缺少 lastUpdated 字段"
+  },
+  {
+    "file": "D:\\我的\\创业\\xianyu-auto-reply-main\\docs\\reference\\import-validation-report.md",
+    "lastUpdated": null,
+    "days": null,
+    "grade": "D",
+    "status": "fail",
+    "error": "缺少 lastUpdated 字段"
+  },
+  {
+    "file": "D:\\我的\\创业\\xianyu-auto-reply-main\\docs\\team\\conventions.md",
+    "lastUpdated": "2026-03-25",
+    "days": 0,
+    "grade": "A",
+    "status": "pass"
+  },
+  {
+    "file": "D:\\我的\\创业\\xianyu-auto-reply-main\\docs\\team\\culture.md",
+    "lastUpdated": "2026-03-25",
+    "days": 0,
+    "grade": "A",
+    "status": "pass"
+  },
+  {
+    "file": "D:\\我的\\创业\\xianyu-auto-reply-main\\docs\\team\\principles.md",
+    "lastUpdated": "2026-03-25",
+    "days": 0,
+    "grade": "A",
+    "status": "pass"
+  },
+  {
+    "file": "D:\\我的\\创业\\xianyu-auto-reply-main\\docs\\reference\\specs\\INDEX.md",
+    "lastUpdated": "2026-03-25",
+    "days": 0,
+    "grade": "A",
+    "status": "pass"
+  },
+  {
+    "file": "D:\\我的\\创业\\xianyu-auto-reply-main\\docs\\plans\\active\\INDEX.md",
+    "lastUpdated": "2026-03-25",
+    "days": 0,
+    "grade": "A",
+    "status": "pass"
+  },
+  {
+    "file": "D:\\我的\\创业\\xianyu-auto-reply-main\\docs\\plans\\completed\\code-maintainability-plan.md",
+    "lastUpdated": "2026-03-25",
+    "days": 0,
+    "grade": "A",
+    "status": "pass"
+  },
+  {
+    "file": "D:\\我的\\创业\\xianyu-auto-reply-main\\docs\\plans\\completed\\code-reorganization-plan.md",
+    "lastUpdated": "2026-03-25",
+    "days": 0,
+    "grade": "A",
+    "status": "pass"
+  },
+  {
+    "file": "D:\\我的\\创业\\xianyu-auto-reply-main\\docs\\plans\\completed\\INDEX.md",
+    "lastUpdated": "2026-03-25",
+    "days": 0,
+    "grade": "A",
+    "status": "pass"
+  },
+  {
+    "file": "D:\\我的\\创业\\xianyu-auto-reply-main\\docs\\plans\\tech-debt\\INDEX.md",
+    "lastUpdated": "2026-03-25",
+    "days": 0,
+    "grade": "A",
+    "status": "pass"
+  }
+]

@@ -3,7 +3,6 @@
 提供reply_server中各模块共用的辅助函数
 """
 from pathlib import Path
-from typing import Optional
 from fastapi.responses import HTMLResponse
 
 

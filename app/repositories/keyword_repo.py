@@ -7,8 +7,6 @@ from typing import List, Tuple, Dict, Optional, Any, TYPE_CHECKING
 from loguru import logger
 
 from .keyword_constants import (
-    VALID_MATCH_TYPES,
-    validate_match_type,
     normalize_match_type,
     normalize_priority,
 )

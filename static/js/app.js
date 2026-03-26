@@ -5,7 +5,7 @@
 
 // ========== 导入所有模块 ==========
 import * as Utils from './modules/utils.js';
-import * as API from './modules/api.js';
+import { API } from './modules/api.js';
 import * as Auth from './modules/auth.js';
 import * as Dashboard from './modules/dashboard.js';
 import * as Keywords from './modules/keywords.js';
@@ -36,12 +36,22 @@ function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('collapsed');
 }
 
+window.showSection = showSection;
+window.toggleSidebar = toggleSidebar;
+
 // ========== 初始化 ==========
 document.addEventListener('DOMContentLoaded', async function() {
     // 检查认证 - authToken 是一个带 getter 的对象，需要调用 .value 获取实际值
     if (!Utils.authToken.value) {
         window.location.href = '/login.html';
         return;
+    }
+
+    // 验证用户身份并显示管理员菜单
+    try {
+        await Auth.checkAuth();
+    } catch (error) {
+        console.error('验证身份失败:', error);
     }
 
     // 菜单点击事件
@@ -99,8 +109,8 @@ window.App = {
     DEBUG_MODE: DEBUG_MODE,
 
     // 展示层函数
-    showToast: API.showToast,
-    toggleLoading: API.toggleLoading
+    showToast: window.showToast,
+    toggleLoading: window.toggleLoading
 };
 
 // ========== 向后兼容：导出常用函数到全局 ==========
@@ -115,55 +125,55 @@ window.clearKeywordCache = Utils.clearKeywordCache;
 window.fetchJSON = API.fetchJSON;
 window.toggleLoading = API.toggleLoading;
 window.loadCookies = Cookies.loadCookies;
-window.addCookie = API.addCookie;
-window.updateCookie = API.updateCookie;
-window.deleteCookie = API.deleteCookie;
-window.toggleAccountStatus = API.toggleAccountStatus;
-window.toggleAutoConfirm = API.toggleAutoConfirm;
-window.getKeywords = API.getKeywords;
-window.getKeywordsWithItemId = API.getKeywordsWithItemId;
-window.saveKeywords = API.saveKeywords;
-window.deleteKeyword = API.deleteKeyword;
-window.addImageKeyword = API.addImageKeyword;
-window.exportKeywordsAPI = API.exportKeywords;
-window.importKeywords = API.importKeywords;
-window.getAllItems = API.getAllItems;
-window.getItemsByCookie = API.getItemsByCookie;
-window.getItem = API.getItem;
-window.updateItem = API.updateItem;
-window.deleteItem = API.deleteItem;
-window.batchDeleteItems = API.batchDeleteItems;
-window.toggleItemMultiSpec = API.toggleItemMultiSpec;
-window.getItemsByPage = API.getItemsByPage;
-window.getAllItemsFromAccount = API.getAllItemsFromAccount;
-window.getDefaultReplies = API.getDefaultReplies;
-window.getDefaultReply = API.getDefaultReply;
-window.updateDefaultReply = API.updateDefaultReply;
-window.getAIReplyConfig = API.getAIReplyConfig;
-window.updateAIReplyConfig = API.updateAIReplyConfig;
-window.testAIReplyAPI = API.testAIReply;
-window.getDeliveryRules = API.getDeliveryRules;
-window.saveDeliveryRuleAPI = API.saveDeliveryRule;
-window.updateDeliveryRuleAPI = API.updateDeliveryRule;
-window.deleteDeliveryRule = API.deleteDeliveryRule;
-window.getNotificationChannels = API.getNotificationChannels;
-window.saveNotificationChannelAPI = API.saveNotificationChannel;
-window.updateNotificationChannelAPI = API.updateNotificationChannel;
-window.deleteNotificationChannel = API.deleteNotificationChannel;
-window.getMessageNotifications = API.getMessageNotifications;
-window.saveAccountNotificationAPI = API.saveAccountNotification;
-window.deleteAccountNotification = API.deleteAccountNotification;
-window.getSystemSettings = API.getSystemSettings;
-window.updateSystemSettings = API.updateSystemSettings;
-window.reloadSystemCacheAPI = API.reloadSystemCache;
-window.getSystemLogs = API.getSystemLogs;
-window.clearSystemLogs = API.clearSystemLogs;
-window.getBackupFiles = API.getBackupFiles;
-window.createBackup = API.createBackup;
-window.downloadBackup = API.downloadBackup;
-window.uploadBackup = API.uploadBackup;
-window.deleteBackup = API.deleteBackup;
-window.restoreBackup = API.restoreBackup;
+window.addCookie = API.cookies.create;
+window.updateCookie = API.cookies.update;
+window.deleteCookie = API.cookies.delete;
+window.toggleAccountStatus = API.cookies.toggleStatus;
+window.toggleAutoConfirm = API.cookies.toggleAutoConfirm;
+window.getKeywords = API.keywords.list;
+window.getKeywordsWithItemId = API.keywords.listWithItemId;
+window.saveKeywords = API.keywords.save;
+window.deleteKeyword = API.keywords.delete;
+window.addImageKeyword = API.keywords.addImage;
+window.exportKeywordsAPI = API.keywords.export;
+window.importKeywords = API.keywords.import;
+window.getAllItems = API.items.getAll;
+window.getItemsByCookie = API.items.getByCookie;
+window.getItem = API.items.get;
+window.updateItem = API.items.update;
+window.deleteItem = API.items.delete;
+window.batchDeleteItems = API.items.batchDelete;
+window.toggleItemMultiSpec = API.items.toggleMultiSpec;
+window.getItemsByPage = API.items.getByPage;
+window.getAllItemsFromAccount = API.items.getAllFromAccount;
+window.getDefaultReplies = API.defaultReplies.list;
+window.getDefaultReply = API.defaultReplies.get;
+window.updateDefaultReply = API.defaultReplies.update;
+window.getAIReplyConfig = API.ai.getSettings;
+window.updateAIReplyConfig = API.ai.saveSettings;
+window.testAIReplyAPI = API.ai.test;
+window.getDeliveryRules = API.delivery.list;
+window.saveDeliveryRuleAPI = API.delivery.save;
+window.updateDeliveryRuleAPI = API.delivery.update;
+window.deleteDeliveryRule = API.delivery.delete;
+window.getNotificationChannels = API.notifications.listChannels;
+window.saveNotificationChannelAPI = API.notifications.saveChannel;
+window.updateNotificationChannelAPI = API.notifications.updateChannel;
+window.deleteNotificationChannel = API.notifications.deleteChannel;
+window.getMessageNotifications = API.notifications.list;
+window.saveAccountNotificationAPI = API.notifications.saveAccount;
+window.deleteAccountNotification = API.notifications.deleteAccount;
+window.getSystemSettings = API.system.getSettings;
+window.updateSystemSettings = API.system.updateSettings;
+window.reloadSystemCacheAPI = API.system.reloadCache;
+window.getSystemLogs = API.system.getLogs;
+window.clearSystemLogs = API.system.clearLogs;
+window.getBackupFiles = API.system.getBackups;
+window.createBackup = API.system.createBackup;
+window.downloadBackup = API.system.downloadBackup;
+window.uploadBackup = API.system.uploadBackup;
+window.deleteBackup = API.system.deleteBackup;
+window.restoreBackup = API.system.restoreBackup;
 
 // Auth 模块
 window.checkAuth = Auth.checkAuth;

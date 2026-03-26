@@ -5,12 +5,12 @@
 """
 
 import json
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from typing import Dict, Any, List, Optional
 
 from loguru import logger
 
-from app.core.rule_engine.operators import LogicOperator, ConditionOperator
+from app.core.rule_engine.operators import LogicOperator
 from app.core.rule_engine.exceptions import RuleEngineError
 from app.core.rule_engine.handlers import (
     TimeConditionHandler,

@@ -1,6 +1,5 @@
 // 商品管理模块 - Items Management
-import { apiBase, authToken, escapeHtml, formatDateTime, loadItemsList } from './utils.js';
-import { showToast } from './api.js';
+import { escapeHtml, formatDateTime, loadItemsList } from './utils.js';
 
 // ==================== 商品管理功能 ====================
 
@@ -50,67 +49,70 @@ export async function loadCookieFilter() {
     try {
         const accounts = await window.API.cookies.list();
         const select = document.getElementById('itemCookieFilter');
+        const currentValue = select.value;
 
-            // 保存当前选择的值
-            const currentValue = select.value;
+        select.innerHTML = '<option value="">所有账号</option>';
 
-            // 清空现有选项（保留"所有账号"）
-            select.innerHTML = '<option value="">所有账号</option>';
+        if (accounts.length === 0) {
+            appendNoAccountsOption(select);
+            return;
+        }
 
-            if (accounts.length === 0) {
-                const option = document.createElement('option');
-                option.value = '';
-                option.textContent = '❌ 暂无账号';
-                option.disabled = true;
-                select.appendChild(option);
-                return;
-            }
+        const enabledAccounts = accounts.filter(account => {
+            const enabled = account.enabled === undefined ? true : account.enabled;
+            return enabled;
+        });
+        const disabledAccounts = accounts.filter(account => {
+            const enabled = account.enabled === undefined ? true : account.enabled;
+            return !enabled;
+        });
 
-            // 分组显示：先显示启用的账号，再显示禁用的账号
-            const enabledAccounts = accounts.filter(account => {
-                const enabled = account.enabled === undefined ? true : account.enabled;
-                return enabled;
-            });
-            const disabledAccounts = accounts.filter(account => {
-                const enabled = account.enabled === undefined ? true : account.enabled;
-                return !enabled;
-            });
+        appendEnabledAccounts(select, enabledAccounts);
+        appendDisabledAccounts(select, disabledAccounts, enabledAccounts.length > 0);
 
-            // 添加启用的账号
-            enabledAccounts.forEach(account => {
-                const option = document.createElement('option');
-                option.value = account.id;
-                option.textContent = `🟢 ${account.id}`;
-                select.appendChild(option);
-            });
-
-            // 添加禁用的账号
-            if (disabledAccounts.length > 0) {
-                // 添加分隔线
-                if (enabledAccounts.length > 0) {
-                    const separator = document.createElement('option');
-                    separator.value = '';
-                    separator.textContent = '────────────────';
-                    separator.disabled = true;
-                    select.appendChild(separator);
-                }
-
-                disabledAccounts.forEach(account => {
-                    const option = document.createElement('option');
-                    option.value = account.id;
-                    option.textContent = `🔴 ${account.id} (已禁用)`;
-                    select.appendChild(option);
-                });
-            }
-
-            // 恢复之前选择的值
-            if (currentValue) {
-                select.value = currentValue;
-            }
+        if (currentValue) {
+            select.value = currentValue;
+        }
     } catch (error) {
         console.error('加载Cookie列表失败:', error);
         showToast('加载账号列表失败', 'danger');
     }
+}
+
+function appendNoAccountsOption(select) {
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = '❌ 暂无账号';
+    option.disabled = true;
+    select.appendChild(option);
+}
+
+function appendEnabledAccounts(select, enabledAccounts) {
+    enabledAccounts.forEach(account => {
+        const option = document.createElement('option');
+        option.value = account.id;
+        option.textContent = `🟢 ${account.id}`;
+        select.appendChild(option);
+    });
+}
+
+function appendDisabledAccounts(select, disabledAccounts, hasEnabled) {
+    if (disabledAccounts.length === 0) return;
+
+    if (hasEnabled) {
+        const separator = document.createElement('option');
+        separator.value = '';
+        separator.textContent = '────────────────';
+        separator.disabled = true;
+        select.appendChild(separator);
+    }
+
+    disabledAccounts.forEach(account => {
+        const option = document.createElement('option');
+        option.value = account.id;
+        option.textContent = `🔴 ${account.id} (已禁用)`;
+        select.appendChild(option);
+    });
 }
 
 // 加载所有商品
@@ -302,17 +304,13 @@ export async function getAllItemsFromAccountAll() {
                 `成功获取商品信息，请查看控制台日志`;
             showToast(message, 'success');
             await refreshItemsData();
-            } else {
-                showToast(data.message || '获取商品信息失败', 'danger');
-            }
         } else {
-            throw new Error(`HTTP ${response.status}`);
+            showToast(data.message || '获取商品信息失败', 'danger');
         }
     } catch (error) {
         console.error('获取商品信息失败:', error);
         showToast('获取商品信息失败', 'danger');
     } finally {
-        // 恢复按钮状态
         button.innerHTML = originalText;
         button.disabled = false;
     }

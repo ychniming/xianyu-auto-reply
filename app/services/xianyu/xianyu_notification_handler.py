@@ -3,7 +3,6 @@
 处理消息通知、Token刷新通知、发货失败通知等
 """
 
-import asyncio
 import json
 import time
 from typing import Optional, Dict, Any

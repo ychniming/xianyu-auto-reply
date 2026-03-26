@@ -292,6 +292,24 @@ class MockWindow {
     this.autoRefreshInterval = null;
     this.currentCookieId = 'test_account';
     this.keywordsData = {};
+    this.App = {
+      showToast: vi.fn((message, type) => {
+        console.log(`Toast: ${message} (${type})`);
+      }),
+      showLoading: vi.fn(() => {}),
+      hideLoading: vi.fn(() => {}),
+      showSection: vi.fn((sectionName) => {}),
+      toggleSidebar: vi.fn(() => {})
+    };
+    this.API = {
+      cookies: { list: vi.fn(), add: vi.fn(), update: vi.fn(), delete: vi.fn() },
+      keywords: { list: vi.fn(), add: vi.fn(), update: vi.fn(), delete: vi.fn() },
+      items: { list: vi.fn(), delete: vi.fn() },
+      cards: { list: vi.fn(), add: vi.fn(), update: vi.fn(), delete: vi.fn() },
+      delivery: { list: vi.fn(), add: vi.fn(), update: vi.fn(), delete: vi.fn() },
+      ai: { getSettings: vi.fn(), saveSettings: vi.fn(), test: vi.fn() },
+      logs: { list: vi.fn() }
+    };
   }
 
   alert(msg) {}

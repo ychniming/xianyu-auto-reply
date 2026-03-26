@@ -2,8 +2,7 @@
 
 提供Cookie数据的增删改查操作
 """
-import sqlite3
-from typing import Dict, Optional, Any, List
+from typing import Dict, Optional, Any
 from loguru import logger
 
 

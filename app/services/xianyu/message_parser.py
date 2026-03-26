@@ -4,7 +4,6 @@
 """
 
 import re
-import json
 from typing import Optional, Dict, Any
 from loguru import logger
 from app.services.xianyu.common import safe_str

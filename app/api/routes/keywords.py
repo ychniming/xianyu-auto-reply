@@ -9,8 +9,8 @@ import pandas as pd
 import io
 from loguru import logger
 
-from app.api.dependencies import get_current_user, check_cookie_owner
-from app.api.response import success, error, created, updated, deleted
+from app.api.dependencies import get_current_user
+from app.api.response import success, updated, deleted
 
 router = APIRouter(prefix="", tags=["关键字管理"])
 
@@ -239,7 +239,6 @@ def test_keyword_match(
     """
     try:
         from app.core.keyword_matcher import keyword_matcher
-        from app.repositories import db_manager
 
         # 构建变量字典（用于变量替换）
         variables = {

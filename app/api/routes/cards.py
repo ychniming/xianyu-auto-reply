@@ -5,7 +5,6 @@
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
-from loguru import logger
 
 from app.api.dependencies import get_current_user
 

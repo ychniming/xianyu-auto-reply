@@ -151,10 +151,10 @@
   - [x] SubTask 17.5: 修复审查发现的问题
 
 ## Phase 18: 最终提交
-- [ ] Task 18: 提交重构结果到 GitHub
-  - [ ] SubTask 18.1: 检查所有更改
-  - [ ] SubTask 18.2: 提交更改，commit message 为 "refactor: 重构项目目录结构"
-  - [ ] SubTask 18.3: 推送到 GitHub 远程仓库
+- [x] Task 18: 提交重构结果到 GitHub
+  - [x] SubTask 18.1: 检查所有更改
+  - [x] SubTask 18.2: 提交更改，commit message 为 "refactor: 完成项目目录重构 + 前端代码优化"
+  - [ ] SubTask 18.3: 推送到 GitHub 远程仓库 (网络问题待重试)
 
 # Task Dependencies
 - [Task 2] depends on [Task 1] ✅

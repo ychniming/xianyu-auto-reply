@@ -1,6 +1,5 @@
-// AI回复模块 - AI回复配置相关函数
-import { apiBase, authToken, aiSettings } from './utils.js';
-import { saveAIReplyConfigAPI, testAIReplyAPI, saveDefaultReplyAPI, getDefaultRepliesAPI, updateDefaultReplyAPI } from './api.js';
+// AI回复模块 - AI配置和默认回复管理
+import { apiBase, authToken, aiStore } from './utils.js';
 
 // 切换AI回复设置面板显示
 export function toggleAIReplySettings() {
@@ -22,19 +21,18 @@ export function toggleAIReplySettings() {
 
 // 加载AI回复设置
 export function loadAIReplySettings() {
-    // 从本地存储或默认配置获取设置
+    const aiState = aiStore.getState();
     const settings = {
-        enabled: aiSettings.enabled || false,
-        model: aiSettings.model || 'gpt-4',
-        apiKey: aiSettings.apiKey || '',
-        customPrompt: aiSettings.customPrompt || '',
-        temperature: aiSettings.temperature || 0.7,
-        maxTokens: aiSettings.maxTokens || 500,
-        intentClassification: aiSettings.intentClassification !== false, // 默认启用
-        autoDelivery: aiSettings.autoDelivery !== false // 默认启用
+        enabled: aiState.enabled || false,
+        model: aiState.model || 'gpt-4',
+        apiKey: aiState.apiKey || '',
+        customPrompt: aiState.customPrompt || '',
+        temperature: aiState.temperature || 0.7,
+        maxTokens: aiState.maxTokens || 500,
+        intentClassification: aiState.intentClassification !== false,
+        autoDelivery: aiState.autoDelivery !== false
     };
 
-    // 填充表单
     const enabledCheckbox = document.getElementById('aiReplyEnabled');
     if (enabledCheckbox) enabledCheckbox.checked = settings.enabled;
 
@@ -59,7 +57,6 @@ export function loadAIReplySettings() {
     const autoDeliveryCheckbox = document.getElementById('autoDelivery');
     if (autoDeliveryCheckbox) autoDeliveryCheckbox.checked = settings.autoDelivery;
 
-    // 更新自定义模型输入框可见性
     toggleCustomModelInput();
 }
 
@@ -109,7 +106,7 @@ export async function testAIReply() {
     testButton.disabled = true;
 
     try {
-        const response = await testAIReplyAPI(testMessage, config);
+        const response = await window.API.ai.test(testMessage, config);
 
         if (response.ok) {
             const data = await response.json();
@@ -140,7 +137,6 @@ export async function saveAIReplyConfig() {
     const intentClassification = document.getElementById('intentClassification')?.checked || false;
     const autoDelivery = document.getElementById('autoDelivery')?.checked || false;
 
-    // 验证API Key
     if (enabled && !apiKey) {
         showToast('请输入API Key', 'warning');
         return false;
@@ -158,23 +154,23 @@ export async function saveAIReplyConfig() {
     };
 
     try {
-        const response = await saveAIReplyConfigAPI(config);
+        const response = await window.API.ai.saveConfig(config);
 
         if (response.ok) {
             const data = await response.json();
             if (data.success) {
-                // 更新本地配置
-                aiSettings.enabled = enabled;
-                aiSettings.model = model;
-                aiSettings.apiKey = apiKey;
-                aiSettings.customPrompt = customPrompt;
-                aiSettings.temperature = temperature;
-                aiSettings.maxTokens = maxTokens;
-                aiSettings.intentClassification = intentClassification;
-                aiSettings.autoDelivery = autoDelivery;
+                aiStore.setState({
+                    enabled,
+                    model,
+                    apiKey,
+                    customPrompt,
+                    temperature,
+                    maxTokens,
+                    intentClassification,
+                    autoDelivery
+                });
 
-                // 保存到本地存储
-                localStorage.setItem('ai_settings', JSON.stringify(aiSettings));
+                localStorage.setItem('ai_settings', JSON.stringify(config));
 
                 showToast('AI回复配置已保存', 'success');
                 return true;
@@ -345,7 +341,7 @@ export async function saveDefaultReply() {
 // 获取所有默认回复
 export async function getDefaultReplies() {
     try {
-        const response = await getDefaultRepliesAPI();
+        const response = await window.API.defaultReplies.list();
 
         if (response.ok) {
             const data = await response.json();
@@ -382,7 +378,7 @@ export async function getDefaultReply(type) {
 // 更新单个默认回复
 export async function updateDefaultReply(type, content) {
     try {
-        const response = await updateDefaultReplyAPI(type, content);
+        const response = await window.API.defaultReplies.update(type, content);
 
         if (response.ok) {
             const data = await response.json();

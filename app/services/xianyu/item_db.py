@@ -5,7 +5,7 @@
 
 import json
 import asyncio
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from loguru import logger
 
 from app.services.xianyu.common import safe_str

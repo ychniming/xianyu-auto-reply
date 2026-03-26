@@ -4,14 +4,13 @@ FastAPI应用主模块，组合所有路由
 """
 import os
 import time
-import asyncio
+import re
 import uuid
 from pathlib import Path
 from typing import Optional, Dict, Any
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, APIRouter, Request
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
-from pydantic import BaseModel
 
 from loguru import logger
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -19,10 +18,9 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-from .limiter import limiter
 from .middleware import setup_middleware, create_startup_handler
-from .metrics import setup_metrics, REQUEST_COUNT, REQUEST_LATENCY, ACTIVE_REQUESTS
-from .models import RequestModel, ResponseData, ResponseModel
+from .metrics import REQUEST_COUNT, REQUEST_LATENCY, ACTIVE_REQUESTS
+from .models import RequestModel, ResponseModel
 from .helpers import read_html_file
 
 from .routes import auth, cookies, keywords, cards, items, settings, admin
@@ -342,16 +340,25 @@ def _register_api_routes(app: FastAPI) -> None:
     @app.get("/qr-login/check/{session_id}")
     async def check_qr_login(session_id: str) -> Dict[str, Any]:
         """检查扫码登录状态"""
+        if not session_id or not re.match(r'^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$', session_id):
+            raise HTTPException(status_code=400, detail="无效的会话ID")
+
         try:
             from app.utils.qr_login import qr_login_manager
             from app.repositories import db_manager
             from src import cookie_manager
+
+            if qr_login_manager.is_session_processed(session_id):
+                logger.info(f"会话已处理，跳过：{session_id}")
+                return await qr_login_manager.check_login(session_id)
 
             result = await qr_login_manager.check_login(session_id)
 
             logger.info(f"检查扫码登录状态：session_id={session_id}, result={result}")
 
             if result.get('status') == 'success' and result.get('cookies') and result.get('unb'):
+                qr_login_manager.mark_session_processed(session_id)
+
                 try:
                     cookie_value = result['cookies']
                     unb = result.get('unb')
@@ -365,22 +372,37 @@ def _register_api_routes(app: FastAPI) -> None:
                     logger.info(f"登录成功，准备保存 Cookie: cookie_id={cookie_id}")
 
                     existing = db_manager.get_cookie_by_id(cookie_id)
+                    db_save_success = False
+
                     if not existing:
                         current_user_id = 1
-                        db_manager.save_cookie(cookie_id, cookie_value, current_user_id)
-                        db_manager.save_cookie_status(cookie_id, True)
-                        logger.info(f"扫码登录成功，已保存新 Cookie 到数据库：{cookie_id}")
-
-                        if cookie_manager and cookie_manager.manager:
-                            cookie_manager.manager.add_cookie(cookie_id, cookie_value, user_id=current_user_id, save_to_db=False)
-                            logger.info(f"已添加到 Cookie 管理器：{cookie_id}")
+                        db_save_success = db_manager.save_cookie(cookie_id, cookie_value, current_user_id)
+                        if db_save_success:
+                            db_manager.save_cookie_status(cookie_id, True)
+                            logger.info(f"扫码登录成功，已保存新 Cookie 到数据库：{cookie_id}")
                     else:
-                        db_manager.save_cookie(cookie_id, cookie_value)
-                        db_manager.save_cookie_status(cookie_id, True)
-                        logger.info(f"扫码登录成功，已更新现有 Cookie：{cookie_id}")
+                        db_save_success = db_manager.save_cookie(cookie_id, cookie_value)
+                        if db_save_success:
+                            db_manager.save_cookie_status(cookie_id, True)
+                            logger.info(f"扫码登录成功，已更新现有 Cookie：{cookie_id}")
 
+                    if not db_save_success:
+                        logger.error(f"数据库保存 Cookie 失败，需要回滚")
+                        result['save_cookie_error'] = '数据库保存失败'
+                        return result
+
+                    try:
                         if cookie_manager and cookie_manager.manager:
-                            cookie_manager.manager.update_cookie(cookie_id, cookie_value)
+                            if not existing:
+                                cookie_manager.manager.add_cookie(cookie_id, cookie_value, user_id=current_user_id, save_to_db=False)
+                            else:
+                                cookie_manager.manager.update_cookie(cookie_id, cookie_value)
+                            logger.info(f"已添加到 Cookie 管理器：{cookie_id}")
+                    except Exception as cookie_mgr_error:
+                        logger.error(f"Cookie 管理器操作失败，执行回滚：{cookie_mgr_error}")
+                        db_manager.delete_cookie(cookie_id)
+                        result['save_cookie_error'] = f'Cookie 管理器操作失败，已回滚: {str(cookie_mgr_error)}'
+                        return result
 
                     result['account_info'] = {
                         'account_id': cookie_id,
@@ -403,14 +425,23 @@ def _register_api_routes(app: FastAPI) -> None:
     @app.post("/qr-login/recheck/{session_id}")
     async def recheck_qr_login(session_id: str) -> Dict[str, Any]:
         """重新检查扫码登录状态"""
+        if not session_id or not re.match(r'^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$', session_id):
+            raise HTTPException(status_code=400, detail="无效的会话ID")
+
         try:
             from app.utils.qr_login import qr_login_manager
             from app.repositories import db_manager
             from src import cookie_manager
 
+            if qr_login_manager.is_session_processed(session_id):
+                logger.info(f"会话已处理，跳过：{session_id}")
+                return await qr_login_manager.recheck_login(session_id)
+
             result = await qr_login_manager.recheck_login(session_id)
 
             if result.get('status') == 'success' and result.get('cookies') and result.get('unb'):
+                qr_login_manager.mark_session_processed(session_id)
+
                 try:
                     cookie_value = result['cookies']
                     unb = result.get('unb')
@@ -422,21 +453,37 @@ def _register_api_routes(app: FastAPI) -> None:
 
                     cookie_id = unb
                     existing = db_manager.get_cookie_by_id(cookie_id)
+                    db_save_success = False
+
                     if not existing:
                         current_user_id = 1
-                        db_manager.save_cookie(cookie_id, cookie_value, current_user_id)
-                        db_manager.save_cookie_status(cookie_id, True)
-                        logger.info(f"扫码登录成功，已保存新 Cookie 到数据库：{cookie_id}")
-
-                        if cookie_manager and cookie_manager.manager:
-                            cookie_manager.manager.add_cookie(cookie_id, cookie_value, user_id=current_user_id, save_to_db=False)
+                        db_save_success = db_manager.save_cookie(cookie_id, cookie_value, current_user_id)
+                        if db_save_success:
+                            db_manager.save_cookie_status(cookie_id, True)
+                            logger.info(f"扫码登录成功，已保存新 Cookie 到数据库：{cookie_id}")
                     else:
-                        db_manager.save_cookie(cookie_id, cookie_value)
-                        db_manager.save_cookie_status(cookie_id, True)
-                        logger.info(f"扫码登录成功，已更新现有 Cookie：{cookie_id}")
+                        db_save_success = db_manager.save_cookie(cookie_id, cookie_value)
+                        if db_save_success:
+                            db_manager.save_cookie_status(cookie_id, True)
+                            logger.info(f"扫码登录成功，已更新现有 Cookie：{cookie_id}")
 
+                    if not db_save_success:
+                        logger.error(f"数据库保存 Cookie 失败，需要回滚")
+                        result['save_cookie_error'] = '数据库保存失败'
+                        return result
+
+                    try:
                         if cookie_manager and cookie_manager.manager:
-                            cookie_manager.manager.update_cookie(cookie_id, cookie_value)
+                            if not existing:
+                                cookie_manager.manager.add_cookie(cookie_id, cookie_value, user_id=current_user_id, save_to_db=False)
+                            else:
+                                cookie_manager.manager.update_cookie(cookie_id, cookie_value)
+                            logger.info(f"已添加到 Cookie 管理器：{cookie_id}")
+                    except Exception as cookie_mgr_error:
+                        logger.error(f"Cookie 管理器操作失败，执行回滚：{cookie_mgr_error}")
+                        db_manager.delete_cookie(cookie_id)
+                        result['save_cookie_error'] = f'Cookie 管理器操作失败，已回滚: {str(cookie_mgr_error)}'
+                        return result
 
                     result['account_info'] = {
                         'account_id': cookie_id,

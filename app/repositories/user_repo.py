@@ -4,7 +4,6 @@
 """
 import hashlib
 import time
-import secrets
 from typing import Dict, Optional, Any, List
 from loguru import logger
 
@@ -378,8 +377,6 @@ class UserRepository:
     async def send_verification_email(self, email: str, code: str) -> bool:
         """发送验证码邮件"""
         try:
-            import aiohttp
-            # 邮件发送逻辑（需要配置邮件服务）
             logger.info(f"发送验证码邮件到 {email}: {code}")
             return True
         except Exception as e:

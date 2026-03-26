@@ -10,20 +10,20 @@ import time
 import base64
 import os
 import sys
-from typing import Optional, Dict, Any, List, AsyncIterator
+from typing import Optional, Dict, Any, List
 from loguru import logger
 import websockets
 import aiohttp
 
 from app.utils.xianyu_utils import (
     generate_mid, generate_uuid, trans_cookies,
-    generate_device_id, generate_sign
+    generate_device_id
 )
 from configs.config import (
     WEBSOCKET_URL, HEARTBEAT_INTERVAL, HEARTBEAT_TIMEOUT,
-    TOKEN_REFRESH_INTERVAL, TOKEN_RETRY_INTERVAL, config, COOKIES_STR,
+    COOKIES_STR,
     LOG_CONFIG, DEFAULT_HEADERS, WEBSOCKET_HEADERS,
-    APP_CONFIG, API_ENDPOINTS
+    APP_CONFIG
 )
 
 # 导入拆分出的处理器模块

@@ -6,7 +6,6 @@
 import os
 import json
 import base64
-from typing import Optional
 from loguru import logger
 
 from app.utils.xianyu_utils import generate_mid, generate_uuid
@@ -133,7 +132,6 @@ class ImageMessageManager:
                 image_url = await uploader.upload_image(image_path)
 
             if image_url:
-                from app.utils.image_utils import image_manager
                 try:
                     from PIL import Image
                     with Image.open(image_path) as img:

@@ -3,7 +3,6 @@
 
 提供闲鱼商品搜索功能
 """
-import asyncio
 from typing import Dict, Any, Optional
 from loguru import logger
 

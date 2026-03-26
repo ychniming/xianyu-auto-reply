@@ -1,6 +1,5 @@
 // 卡券管理模块 - 卡券管理相关函数
 import { apiBase, authToken } from './utils.js';
-import { } from './api.js';
 
 // 加载卡券列表
 export async function loadCards() {

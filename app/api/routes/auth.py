@@ -2,16 +2,15 @@
 
 提供登录、注册、验证码等认证相关接口
 """
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
-import time
 import secrets
 from loguru import logger
 from app.api.limiter import limiter
-from app.api.response import success, error, ApiResponse
-from app.api.dependencies import get_token_data, require_auth, get_current_user, verify_admin_token
+from app.api.response import success, error
+from app.api.dependencies import get_token_data, verify_admin_token
 
 router = APIRouter(prefix="", tags=["认证"])
 

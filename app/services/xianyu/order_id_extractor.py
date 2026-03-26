@@ -6,7 +6,7 @@
 import json
 import time
 import re
-from typing import Optional, Dict, Any
+from typing import Optional
 from loguru import logger
 
 from app.services.xianyu.common import safe_str

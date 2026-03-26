@@ -58,6 +58,7 @@ class QRLoginSession:
         self.expire_time = 600  # 10 分钟过期（给用户足够时间完成验证）
         self.params = {}  # 存储登录参数
         self.verification_url = None  # 风控验证 URL
+        self.processed = False  # 标记是否已处理，防止重复处理
 
     def is_expired(self) -> bool:
         """检查是否过期"""
@@ -515,6 +516,45 @@ class QRLoginManager:
                     'unb': session.unb
                 }
             return None
+
+    def remove_session(self, session_id: str) -> bool:
+        """删除会话（线程安全）
+
+        Args:
+            session_id: 会话 ID
+
+        Returns:
+            bool: 是否成功删除
+        """
+        with self._lock:
+            if session_id in self.sessions:
+                del self.sessions[session_id]
+                logger.debug(f"删除会话: {session_id}")
+                return True
+            return False
+
+    def mark_session_processed(self, session_id: str) -> bool:
+        """标记会话已处理，防止重复处理（线程安全）
+
+        Args:
+            session_id: 会话 ID
+
+        Returns:
+            bool: 是否成功标记
+        """
+        with self._lock:
+            session = self.sessions.get(session_id)
+            if session:
+                session.processed = True
+                logger.debug(f"标记会话已处理: {session_id}")
+                return True
+            return False
+
+    def is_session_processed(self, session_id: str) -> bool:
+        """检查会话是否已处理（线程安全）"""
+        with self._lock:
+            session = self.sessions.get(session_id)
+            return session.processed if session else True
 
     def _maybe_lazy_cleanup(self) -> None:
         """懒清理 - 按概率触发清理（线程安全）

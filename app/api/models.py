@@ -3,7 +3,6 @@
 提供FastAPI应用使用的数据模型
 """
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
 
 
 class RequestModel(BaseModel):

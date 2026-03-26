@@ -34,6 +34,7 @@ class DatabaseMigrator:
                 logger.info("数据库迁移完成：添加image_url列")
 
             self._update_cards_table_constraints(cursor)
+            self._create_cookies_indexes(cursor)
         except Exception as e:
             logger.error(f"数据库迁移失败: {e}")
 
@@ -94,6 +95,29 @@ class DatabaseMigrator:
                         pass
             else:
                 logger.error(f"检查cards表约束时出现未知错误: {e}")
+
+    def _create_cookies_indexes(self, cursor) -> None:
+        """为 cookies 表创建索引以提高查询性能"""
+        try:
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_cookies_user_id'")
+            if cursor.fetchone():
+                logger.info("cookies 表的 user_id 索引已存在，跳过")
+                return
+
+            logger.info("开始为 cookies 表创建 user_id 索引...")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_cookies_user_id ON cookies(user_id)")
+            logger.info("cookies 表的 user_id 索引创建成功")
+
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_cookie_status_cookie_id'")
+            if cursor.fetchone():
+                logger.info("cookie_status 表的 cookie_id 索引已存在，跳过")
+                return
+
+            logger.info("开始为 cookie_status 表创建 cookie_id 索引...")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_cookie_status_cookie_id ON cookie_status(cookie_id)")
+            logger.info("cookie_status 表的 cookie_id 索引创建成功")
+        except Exception as e:
+            logger.error(f"创建索引失败: {e}")
 
     def _migrate_keywords_table_constraints(self, cursor) -> None:
         """迁移keywords表的约束"""

@@ -6,7 +6,7 @@
 import asyncio
 import time
 import aiohttp
-from typing import Optional, Dict, Any
+from typing import Optional
 from loguru import logger
 
 from app.utils.xianyu_utils import trans_cookies, generate_sign

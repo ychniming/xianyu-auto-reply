@@ -3,7 +3,7 @@
 提供卡券、发货规则数据操作中的重复代码提取
 """
 import json
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Tuple
 
 
 def _parse_api_config(api_config: Any) -> Dict[str, Any]:

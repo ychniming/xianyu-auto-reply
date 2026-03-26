@@ -4,7 +4,7 @@
 """
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 from loguru import logger
 import json
 import time
@@ -243,8 +243,6 @@ def update_system_setting(key: str, setting: SystemSettingIn, current_user: Opti
 def delete_system_setting(key: str, current_user: Optional[Dict[str, Any]] = Depends(get_current_user)):
     """删除系统设置"""
     try:
-        from app.repositories import db_manager
-        # 系统设置通常不允许删除，这里简化处理
         return {'msg': 'deleted'}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

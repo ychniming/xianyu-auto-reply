@@ -1,30 +1,25 @@
 // 关键词管理模块 - 关键词管理相关函数
-import { apiBase, authToken, keywordsData, currentCookieId, clearKeywordCache, escapeHtml, loadItemsList } from './utils.js';
-import { fetchJSON } from './api.js';
+import { apiBase, authToken, keywordsStore, cookiesStore, clearKeywordCache, escapeHtml, loadItemsList } from './utils.js';
 
 // 获取账号关键词数量（带缓存）
 export async function getAccountKeywordCount(accountId) {
     const now = Date.now();
+    const cacheState = accountKeywordCache.getState();
 
-    // 检查缓存
-    if (window.accountKeywordCache && window.accountKeywordCache[accountId] && (now - window.cacheTimestamp) < window.CACHE_DURATION) {
-        return window.accountKeywordCache[accountId];
+    if (cacheState.cache[accountId] && (now - cacheState.timestamp) < CACHE_DURATION) {
+        return cacheState.cache[accountId];
     }
 
     try {
         const keywordsData = await window.API.keywords.list(accountId);
         const count = Array.isArray(keywordsData) ? keywordsData.length : 0;
 
-        if (!window.accountKeywordCache) {
-            window.accountKeywordCache = {};
-        }
-        window.accountKeywordCache[accountId] = count;
-        window.cacheTimestamp = now;
+        accountKeywordCache.setState({
+            cache: { ...cacheState.cache, [accountId]: count },
+            timestamp: now
+        });
 
-            return count;
-        } else {
-            return 0;
-        }
+        return count;
     } catch (error) {
         console.error(`获取账号 ${accountId} 关键词失败:`, error);
         return 0;
@@ -36,10 +31,14 @@ export async function refreshAccountList() {
     try {
         toggleLoading(true);
 
-        // 获取账号列表
         const accounts = await window.API.cookies.list();
         const select = document.getElementById('accountSelect');
         select.innerHTML = '<option value="">🔍 请选择一个账号开始配置...</option>';
+
+        if (!accounts || accounts.length === 0) {
+            select.innerHTML = '<option value="">❌ 暂无账号，请先添加账号</option>';
+            return;
+        }
 
         const accountsWithKeywords = await Promise.all(
             accounts.map(async (account) => {
@@ -50,89 +49,70 @@ export async function refreshAccountList() {
                         keywords: keywordsData,
                         keywordCount: Array.isArray(keywordsData) ? keywordsData.length : 0
                     };
-                        } else {
-                            return {
-                                ...account,
-                                keywordCount: 0
-                            };
-                        }
-                    } catch (error) {
-                        console.error(`获取账号 ${account.id} 关键词失败:`, error);
-                        return {
-                            ...account,
-                            keywordCount: 0
-                        };
-                    }
-                })
-            );
+                } catch (error) {
+                    console.error(`获取账号 ${account.id} 关键词失败:`, error);
+                    return {
+                        ...account,
+                        keywords: [],
+                        keywordCount: 0
+                    };
+                }
+            })
+        );
 
-            // 渲染账号选项（显示所有账号，但标识禁用状态）
-            if (accountsWithKeywords.length === 0) {
-                select.innerHTML = '<option value="">❌ 暂无账号，请先添加账号</option>';
-                return;
+        const enabledAccounts = accountsWithKeywords.filter(account => {
+            const enabled = account.enabled === undefined ? true : account.enabled;
+            return enabled;
+        });
+        const disabledAccounts = accountsWithKeywords.filter(account => {
+            const enabled = account.enabled === undefined ? true : account.enabled;
+            return !enabled;
+        });
+
+        enabledAccounts.forEach(account => {
+            const option = document.createElement('option');
+            option.value = account.id;
+
+            let icon = '📝';
+            let status = '';
+            if (account.keywordCount === 0) {
+                icon = '⚪';
+                status = ' (未配置)';
+            } else if (account.keywordCount >= 5) {
+                icon = '🟢';
+                status = ` (${account.keywordCount} 个关键词)`;
+            } else {
+                icon = '🟡';
+                status = ` (${account.keywordCount} 个关键词)`;
             }
 
-            // 分组显示：先显示启用的账号，再显示禁用的账号
-            const enabledAccounts = accountsWithKeywords.filter(account => {
-                const enabled = account.enabled === undefined ? true : account.enabled;
-                return enabled;
-            });
-            const disabledAccounts = accountsWithKeywords.filter(account => {
-                const enabled = account.enabled === undefined ? true : account.enabled;
-                return !enabled;
-            });
+            option.textContent = `${icon} ${account.id}${status}`;
+            select.appendChild(option);
+        });
 
-            // 渲染启用的账号
-            enabledAccounts.forEach(account => {
+        if (disabledAccounts.length > 0) {
+            const separatorOption = document.createElement('option');
+            separatorOption.disabled = true;
+            separatorOption.textContent = `--- 禁用账号 (${disabledAccounts.length} 个) ---`;
+            select.appendChild(separatorOption);
+
+            disabledAccounts.forEach(account => {
                 const option = document.createElement('option');
                 option.value = account.id;
 
-                // 根据关键词数量显示不同的图标和样式
-                let icon = '📝';
+                let icon = '🔴';
                 let status = '';
                 if (account.keywordCount === 0) {
-                    icon = '⚪';
-                    status = ' (未配置)';
-                } else if (account.keywordCount >= 5) {
-                    icon = '🟢';
-                    status = ` (${account.keywordCount} 个关键词)`;
+                    status = ' (未配置) [已禁用]';
                 } else {
-                    icon = '🟡';
-                    status = ` (${account.keywordCount} 个关键词)`;
+                    status = ` (${account.keywordCount} 个关键词) [已禁用]`;
                 }
 
                 option.textContent = `${icon} ${account.id}${status}`;
+                option.style.color = '#6b7280';
+                option.style.fontStyle = 'italic';
                 select.appendChild(option);
             });
-
-            // 如果有禁用的账号，添加分隔线和禁用账号
-            if (disabledAccounts.length > 0) {
-                const separatorOption = document.createElement('option');
-                separatorOption.disabled = true;
-                separatorOption.textContent = `--- 禁用账号 (${disabledAccounts.length} 个) ---`;
-                select.appendChild(separatorOption);
-
-                // 渲染禁用的账号
-                disabledAccounts.forEach(account => {
-                    const option = document.createElement('option');
-                    option.value = account.id;
-
-                    let icon = '🔴';
-                    let status = '';
-                    if (account.keywordCount === 0) {
-                        status = ' (未配置) [已禁用]';
-                    } else {
-                        status = ` (${account.keywordCount} 个关键词) [已禁用]`;
-                    }
-
-                    option.textContent = `${icon} ${account.id}${status}`;
-                    option.style.color = '#6b7280';
-                    option.style.fontStyle = 'italic';
-                    select.appendChild(option);
-                });
-            }
-        } else {
-            showToast('获取账号列表失败', 'danger');
         }
     } catch (error) {
         console.error('刷新账号列表失败:', error);
@@ -154,14 +134,15 @@ export async function loadAccountKeywords() {
 
     try {
         toggleLoading(true);
-        currentCookieId = accountId;
+        cookiesStore.setState({ currentId: accountId });
 
         const accounts = await window.API.cookies.list();
         const currentAccount = accounts.find(acc => acc.id === accountId);
         const accountStatus = currentAccount ? (currentAccount.enabled === undefined ? true : currentAccount.enabled) : true;
 
         const formattedData = await window.API.keywords.listWithItemId(accountId);
-        keywordsData[accountId] = formattedData;
+        const keywordsState = keywordsStore.getState();
+        keywordsStore.setState({ data: { ...keywordsState.data, [accountId]: formattedData } });
         renderKeywordsList(formattedData);
 
         await loadItemsList(accountId, 'newItemIdSelect', '选择商品或留空表示通用关键词');
@@ -380,7 +361,8 @@ function validateKeywordInput(keyword, reply, replyMode, multiReplies) {
         return { valid: false, error: 'keyword' };
     }
 
-    if (!currentCookieId) {
+    const currentId = cookiesStore.getState().currentId;
+    if (!currentId) {
         showToast('请先选择账号', 'warning');
         return { valid: false, error: 'account' };
     }
@@ -514,11 +496,13 @@ export async function addKeyword() {
 
     const isEdit = isEditMode();
     const actionText = isEdit ? '更新' : '添加';
+    const currentCookieId = cookiesStore.getState().currentId;
 
     try {
         toggleLoading(true);
 
-        let currentKeywords = [...(keywordsData[currentCookieId] || [])];
+        const keywordsState = keywordsStore.getState();
+        let currentKeywords = [...(keywordsState.data[currentCookieId] || [])];
         let keywordsToSave = prepareKeywordsForEdit([...currentKeywords]);
 
         const existingKeyword = checkKeywordExists(keywordsToSave, keyword, itemId);
@@ -674,6 +658,7 @@ function renderKeywordContent(item, replyMode, isImageType) {
 function renderKeywordRow(item, index) {
     const keywordItem = document.createElement('div');
     keywordItem.className = 'keyword-item';
+    const currentCookieId = cookiesStore.getState().currentId;
 
     const keywordType = item.type || 'text';
     const isImageType = keywordType === 'image';
@@ -743,10 +728,12 @@ function renderKeywordsTable(keywords) {
         return;
     }
 
+    const fragment = document.createDocumentFragment();
     keywords.forEach((item, index) => {
         const keywordItem = renderKeywordRow(item, index);
-        container.appendChild(keywordItem);
+        fragment.appendChild(keywordItem);
     });
+    container.appendChild(fragment);
 }
 
 // 渲染现代化关键词列表
@@ -761,7 +748,9 @@ export function focusKeywordInput() {
 
 // 编辑关键词
 export function editKeyword(index) {
-    const keywords = keywordsData[currentCookieId] || [];
+    const currentCookieId = cookiesStore.getState().currentId;
+    const keywordsState = keywordsStore.getState();
+    const keywords = keywordsState.data[currentCookieId] || [];
     const keyword = keywords[index];
 
     if (!keyword) {
@@ -769,62 +758,50 @@ export function editKeyword(index) {
         return;
     }
 
-    // 将关键词信息填入输入框
     document.getElementById('newKeyword').value = keyword.keyword;
     document.getElementById('newReply').value = keyword.reply || '';
-    
-    // 设置商品ID选择框
+
     const selectElement = document.getElementById('newItemIdSelect');
     if (selectElement) {
         selectElement.value = keyword.item_id || '';
     }
-    
-    // 设置匹配类型
+
     const matchTypeSelect = document.getElementById('newMatchType');
     if (matchTypeSelect) {
         matchTypeSelect.value = keyword.match_type || 'contains';
     }
-    
-    // 设置优先级
+
     const priorityInput = document.getElementById('newPriority');
     if (priorityInput) {
         priorityInput.value = keyword.priority !== undefined ? keyword.priority : 50;
     }
-    
-    // 设置回复模式
+
     const replyModeSelect = document.getElementById('newReplyMode');
     if (replyModeSelect) {
         replyModeSelect.value = keyword.reply_mode || 'single';
     }
-    
-    // 设置多回复内容
+
     const multiRepliesInput = document.getElementById('newMultiReplies');
     if (multiRepliesInput && keyword.replies && keyword.replies.length > 1) {
         multiRepliesInput.value = keyword.replies.join('\n');
     }
-    
-    // 触发多回复字段显示切换
+
     toggleMultiReplyField();
-    
-    // 回显高级条件数据
+
     if (keyword.conditions) {
         fillAdvancedConditions(keyword.conditions);
     }
 
-    // 设置编辑模式标识
     window.editingIndex = index;
     window.originalKeyword = keyword.keyword;
     window.originalItemId = keyword.item_id || '';
 
-    // 更新按钮文本和样式
     const addBtn = document.querySelector('.add-btn');
     addBtn.innerHTML = '<i class="bi bi-check-lg"></i>更新';
     addBtn.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
 
-    // 显示取消按钮
     showCancelEditButton();
 
-    // 聚焦到关键词输入框并选中文本
     setTimeout(() => {
         const keywordInput = document.getElementById('newKeyword');
         keywordInput.focus();
@@ -1084,7 +1061,8 @@ export function initImageKeywordEventListeners() {
 
 // 显示添加图片关键词模态框
 export function showAddImageKeywordModal() {
-    if (!currentCookieId) {
+    const currentId = cookiesStore.getState().currentId;
+    if (!currentId) {
         showToast('请先选择账号', 'warning');
         return;
     }
@@ -1102,7 +1080,8 @@ export function showAddImageKeywordModal() {
 
 // 为图片关键词模态框加载商品列表
 export async function loadItemsListForImageKeyword() {
-    await loadItemsList(currentCookieId, 'imageItemIdSelect', '选择商品或留空表示通用关键词');
+    const currentId = cookiesStore.getState().currentId;
+    await loadItemsList(currentId, 'imageItemIdSelect', '选择商品或留空表示通用关键词');
 }
 
 // 添加图片关键词
@@ -1111,6 +1090,7 @@ export async function addImageKeyword() {
     const itemId = document.getElementById('imageItemIdSelect').value.trim();
     const fileInput = document.getElementById('imageFile');
     const file = fileInput.files[0];
+    const currentCookieId = cookiesStore.getState().currentId;
 
     if (!keyword) {
         showToast('请填写关键词', 'warning');
@@ -1224,6 +1204,7 @@ export function goToAutoReply(accountId) {
 
 // 导出关键词
 export async function exportKeywords() {
+    const currentCookieId = cookiesStore.getState().currentId;
     if (!currentCookieId) {
         showToast('请先选择账号', 'warning');
         return;
@@ -1278,6 +1259,7 @@ export async function exportKeywords() {
 
 // 显示导入模态框
 export function showImportModal() {
+    const currentCookieId = cookiesStore.getState().currentId;
     if (!currentCookieId) {
         showToast('请先选择账号', 'warning');
         return;
@@ -1289,6 +1271,7 @@ export function showImportModal() {
 
 // 导入关键词
 export async function importKeywords() {
+    const currentCookieId = cookiesStore.getState().currentId;
     if (!currentCookieId) {
         showToast('请先选择账号', 'warning');
         return;
@@ -1334,7 +1317,7 @@ export async function importKeywords() {
 
                 fileInput.value = '';
 
-                loadAccountKeywords(currentCookieId);
+                loadAccountKeywords();
 
                 showToast(`导入成功！新增: ${result.added}, 更新: ${result.updated}`, 'success');
             }, 500);
@@ -1358,6 +1341,7 @@ export async function importKeywords() {
 export async function testKeywordMatch() {
     const message = document.getElementById('testMessage').value.trim();
     const itemId = document.getElementById('testItemId').value.trim() || null;
+    const currentCookieId = cookiesStore.getState().currentId;
 
     if (!message) {
         showToast('请输入测试消息', 'warning');

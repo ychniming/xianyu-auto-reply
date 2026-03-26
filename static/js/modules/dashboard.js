@@ -1,13 +1,11 @@
 // 仪表盘模块 - 仪表盘和日志相关函数
-import { apiBase, authToken, dashboardData, clearKeywordCache, escapeHtml } from './utils.js';
-import { fetchJSON, getLogsAPI, clearLogsAPI, getLogStatsAPI } from './api.js';
+import { apiBase, authToken, dashboardStore, clearKeywordCache, escapeHtml } from './utils.js';
 
 // 加载仪表盘数据
 export async function loadDashboard() {
     try {
         toggleLoading(true);
 
-        // 获取账号列表
         const cookiesResponse = await fetch(`${apiBase}/cookies/details`, {
             headers: {
                 'Authorization': `Bearer ${authToken.value}`
@@ -18,7 +16,6 @@ export async function loadDashboard() {
             const cookiesData = await cookiesResponse.json();
             const accounts = cookiesData.data || cookiesData;
 
-            // 为每个账号获取关键词信息
             const accountsWithKeywords = await Promise.all(
                 accounts.map(async (account) => {
                     try {
@@ -53,9 +50,8 @@ export async function loadDashboard() {
                 })
             );
 
-            dashboardData.accounts = accountsWithKeywords;
+            dashboardStore.setState({ accounts: accountsWithKeywords });
 
-            // 计算统计数据
             let totalKeywords = 0;
             let activeAccounts = 0;
             let enabledAccounts = 0;
@@ -73,9 +69,8 @@ export async function loadDashboard() {
                 }
             });
 
-            dashboardData.totalKeywords = totalKeywords;
+            dashboardStore.setState({ totalKeywords: totalKeywords });
 
-            // 更新仪表盘显示
             updateDashboardStats(accountsWithKeywords.length, totalKeywords, enabledAccounts);
             updateDashboardAccountsList(accountsWithKeywords);
         }
@@ -150,7 +145,7 @@ export async function refreshLogs() {
     try {
         const lines = document.getElementById('logLines').value;
 
-        const response = await getLogsAPI(lines);
+        const response = await window.API.logs.getLogs(lines);
 
         window.allLogs = response.logs || [];
         window.filteredLogs = window.allLogs;
@@ -263,7 +258,7 @@ export async function clearLogsServer() {
     }
 
     try {
-        const response = await clearLogsAPI();
+        const response = await window.API.logs.clearLogs();
 
         if (response.ok) {
             const data = await response.json();
@@ -288,7 +283,7 @@ export async function clearLogsServer() {
 // 显示日志统计信息
 export async function showLogStats() {
     try {
-        const response = await getLogStatsAPI();
+        const response = await window.API.logs.getLogStats();
 
         if (response.ok) {
             const data = await response.json();

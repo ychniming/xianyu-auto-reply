@@ -356,7 +356,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #ccc;
+    background-color: var(--gray-400);
     transition: var(--transition-slow);
     border-radius: 24px;
 }
@@ -397,13 +397,13 @@ input:checked + .status-slider:before {
 
 .status-badge.enabled {
     background: var(--success-light);
-    color: #166534;
+    color: var(--success-dark);
     border: 1px solid var(--success-border);
 }
 
 .status-badge.disabled {
     background: var(--danger-light);
-    color: #991b1b;
+    color: var(--danger-dark);
     border: 1px solid var(--danger-border);
 }
 
@@ -459,4 +459,39 @@ input:checked + .status-slider:before {
     input:checked + .status-slider:before {
         transform: translateX(20px);
     }
+}
+
+/* ========== 基础组件样式 ========== */
+
+.btn-primary-base {
+    background-color: var(--primary, #007bff);
+    border-color: var(--primary, #007bff);
+    color: var(--text-white, #fff);
+    border-radius: var(--radius-sm, 4px);
+    padding: var(--spacing-xs, 0.25rem) var(--spacing-md, 1rem);
+    transition: var(--transition-fast, 0.15s);
+}
+
+.btn-primary-base:hover {
+    background-color: var(--primary-hover, #0056b3);
+    border-color: var(--primary-hover, #0056b3);
+}
+
+.card-base {
+    background-color: var(--bg-white, #fff);
+    border-radius: var(--radius-md, 8px);
+    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.1));
+    padding: var(--spacing-md, 1rem);
+}
+
+.form-control-base {
+    border-radius: var(--radius-sm, 4px);
+    padding: var(--spacing-xs, 0.25rem) var(--spacing-sm, 0.5rem);
+    border: 1px solid var(--border-color, #ddd);
+}
+
+.badge-base {
+    border-radius: var(--radius-full, 9999px);
+    padding: var(--spacing-xs, 0.25rem) var(--spacing-sm, 0.5rem);
+    font-size: var(--font-xs, 0.75rem);
 }

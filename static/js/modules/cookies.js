@@ -1,176 +1,200 @@
 // Cookie管理模块 - 账号/Cookie相关函数
-import { apiBase, authToken, clearKeywordCache } from './utils.js';
-import { fetchJSON } from './api.js';
+import { clearKeywordCache } from './utils.js';
 import { refreshAccountList, loadAccountKeywords, updateAccountBadge } from './keywords.js';
 
 // 加载Cookie列表
 export async function loadCookies() {
     try {
-    window.App.toggleLoading(true);
-    const tbody = document.querySelector('#cookieTable tbody');
-    tbody.innerHTML = '';
+        window.App.toggleLoading(true);
+        const tbody = document.querySelector('#cookieTable tbody');
+        tbody.innerHTML = '';
 
-    const cookieDetails = await window.API.cookies.list();
-    const cookiesArray = cookieDetails.data || cookieDetails;
+        const cookieDetails = await window.API.cookies.list();
+        const cookiesArray = cookieDetails.data || cookieDetails;
 
-    if (cookiesArray.length === 0) {
-        tbody.innerHTML = `
-        <tr>
-            <td colspan="7" class="text-center py-4 text-muted empty-state">
-            <i class="bi bi-inbox fs-1 d-block mb-3"></i>
-            <h5>暂无账号</h5>
-            <p class="mb-0">请添加新的闲鱼账号开始使用</p>
-            </td>
-        </tr>
-        `;
-        return;
-    }
-
-    // 为每个账号获取关键词数量和默认回复设置并渲染
-    const accountsWithKeywords = await Promise.all(
-        cookiesArray.map(async (cookie) => {
-        try {
-            // 获取关键词数量
-            const keywordsData = await window.API.keywords.list(cookie.id);
-            const keywordCount = Array.isArray(keywordsData) ? keywordsData.length : 0;
-
-            let defaultReply = { enabled: false, reply_content: '' };
-            try {
-                defaultReply = await window.API.defaultReplies.get(cookie.id) || defaultReply;
-            } catch (e) {
-                console.warn(`获取账号 ${cookie.id} 默认回复失败:`, e);
-            }
-
-            let aiReply = { ai_enabled: false, model_name: 'qwen-plus' };
-            try {
-                aiReply = await window.API.ai.getSettings(cookie.id) || aiReply;
-            } catch (e) {
-                console.warn(`获取账号 ${cookie.id} AI回复设置失败:`, e);
-            }
-
-            return {
-            ...cookie,
-            keywordCount: keywordCount,
-            defaultReply: defaultReply,
-            aiReply: aiReply
-            };
-        } catch (error) {
-            return {
-            ...cookie,
-            keywordCount: 0,
-            defaultReply: { enabled: false, reply_content: '' },
-            aiReply: { ai_enabled: false, model_name: 'qwen-plus' }
-            };
+        if (cookiesArray.length === 0) {
+            renderEmptyCookiesState(tbody);
+            return;
         }
+
+        const accountsWithKeywords = await fetchAccountsWithDetails(cookiesArray);
+        renderCookiesTable(tbody, accountsWithKeywords);
+        setupCookieClickHandlers();
+    } catch (err) {
+    } finally {
+        window.App.toggleLoading(false);
+    }
+}
+
+function renderEmptyCookiesState(tbody) {
+    tbody.innerHTML = `
+    <tr>
+        <td colspan="7" class="text-center py-4 text-muted empty-state">
+        <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+        <h5>暂无账号</h5>
+        <p class="mb-0">请添加新的闲鱼账号开始使用</p>
+        </td>
+    </tr>
+    `;
+}
+
+async function fetchAccountsWithDetails(cookiesArray) {
+    return Promise.all(
+        cookiesArray.map(async (cookie) => {
+            try {
+                const keywordsData = await window.API.keywords.list(cookie.id);
+                const keywordCount = Array.isArray(keywordsData) ? keywordsData.length : 0;
+                const defaultReply = await getDefaultReply(cookie.id);
+                const aiReply = await getAIReplySettings(cookie.id);
+
+                return {
+                    ...cookie,
+                    keywordCount: keywordCount,
+                    defaultReply: defaultReply,
+                    aiReply: aiReply
+                };
+            } catch (error) {
+                return {
+                    ...cookie,
+                    keywordCount: 0,
+                    defaultReply: { enabled: false, reply_content: '' },
+                    aiReply: { ai_enabled: false, model_name: 'qwen-plus' }
+                };
+            }
         })
     );
+}
 
+async function getDefaultReply(cookieId) {
+    try {
+        return await window.API.defaultReplies.get(cookieId) || { enabled: false, reply_content: '' };
+    } catch (e) {
+        console.warn(`获取账号 ${cookieId} 默认回复失败:`, e);
+        return { enabled: false, reply_content: '' };
+    }
+}
+
+async function getAIReplySettings(cookieId) {
+    try {
+        return await window.API.ai.getSettings(cookieId) || { ai_enabled: false, model_name: 'qwen-plus' };
+    } catch (e) {
+        console.warn(`获取账号 ${cookieId} AI回复设置失败:`, e);
+        return { ai_enabled: false, model_name: 'qwen-plus' };
+    }
+}
+
+function renderCookiesTable(tbody, accountsWithKeywords) {
+    const fragment = document.createDocumentFragment();
     accountsWithKeywords.forEach(cookie => {
-        // 使用数据库中的实际状态，默认为启用
         const isEnabled = cookie.enabled === undefined ? true : cookie.enabled;
+        const tr = createCookieRow(cookie, isEnabled);
+        fragment.appendChild(tr);
+    });
+    tbody.appendChild(fragment);
+}
 
-        const tr = document.createElement('tr');
-        tr.className = `account-row ${isEnabled ? 'enabled' : 'disabled'}`;
-        // 默认回复状态标签
-        const defaultReplyBadge = cookie.defaultReply.enabled ?
+function createCookieRow(cookie, isEnabled) {
+    const tr = document.createElement('tr');
+    tr.className = `account-row ${isEnabled ? 'enabled' : 'disabled'}`;
+
+    const defaultReplyBadge = cookie.defaultReply.enabled ?
         '<span class="badge bg-success">启用</span>' :
         '<span class="badge bg-secondary">禁用</span>';
 
-        // AI回复状态标签
-        const aiReplyBadge = cookie.aiReply.ai_enabled ?
+    const aiReplyBadge = cookie.aiReply.ai_enabled ?
         '<span class="badge bg-primary">AI启用</span>' :
         '<span class="badge bg-secondary">AI禁用</span>';
 
-        // 自动确认发货状态（默认开启）
-        const autoConfirm = cookie.auto_confirm === undefined ? true : cookie.auto_confirm;
+    const autoConfirm = cookie.auto_confirm === undefined ? true : cookie.auto_confirm;
 
-        tr.innerHTML = `
-        <td class="align-middle">
-            <div class="cookie-id">
-            <strong class="text-primary">${cookie.id}</strong>
-            </div>
-        </td>
-        <td class="align-middle">
-            <div class="cookie-value" title="点击复制Cookie" style="font-family: monospace; font-size: 0.875rem; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-            ${cookie.value || '未设置'}
-            </div>
-        </td>
-        <td class="align-middle">
-            <span class="badge ${cookie.keywordCount > 0 ? 'bg-success' : 'bg-secondary'}">
-            ${cookie.keywordCount} 个关键词
-            </span>
-        </td>
-        <td class="align-middle">
-            <div class="d-flex align-items-center gap-2">
-            <label class="status-toggle" title="${isEnabled ? '点击禁用' : '点击启用'}">
-                <input type="checkbox" ${isEnabled ? 'checked' : ''} onchange="toggleAccountStatus('${cookie.id}', this.checked)">
-                <span class="status-slider"></span>
-            </label>
-            <span class="status-badge ${isEnabled ? 'enabled' : 'disabled'}" title="${isEnabled ? '账号已启用' : '账号已禁用'}">
-                <i class="bi bi-${isEnabled ? 'check-circle-fill' : 'x-circle-fill'}"></i>
-            </span>
-            </div>
-        </td>
-        <td class="align-middle">
-            ${defaultReplyBadge}
-        </td>
-        <td class="align-middle">
-            ${aiReplyBadge}
-        </td>
-        <td class="align-middle">
-            <div class="d-flex align-items-center gap-2">
-            <label class="status-toggle" title="${autoConfirm ? '点击关闭自动确认发货' : '点击开启自动确认发货'}">
-                <input type="checkbox" ${autoConfirm ? 'checked' : ''} onchange="toggleAutoConfirm('${cookie.id}', this.checked)">
-                <span class="status-slider"></span>
-            </label>
-            <span class="status-badge ${autoConfirm ? 'enabled' : 'disabled'}" title="${autoConfirm ? '自动确认发货已开启' : '自动确认发货已关闭'}">
-                <i class="bi bi-${autoConfirm ? 'truck' : 'truck-flatbed'}"></i>
-            </span>
-            </div>
-        </td>
-        <td class="align-middle">
-            <div class="btn-group" role="group">
-            <button class="btn btn-sm btn-outline-primary" onclick="editCookieInline('${cookie.id}', '${cookie.value}')" title="修改Cookie" ${!isEnabled ? 'disabled' : ''}>
-                <i class="bi bi-pencil"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-success" onclick="goToAutoReply('${cookie.id}')" title="${isEnabled ? '设置自动回复' : '配置关键词 (账号已禁用)'}">
-                <i class="bi bi-arrow-right-circle"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-warning" onclick="configAIReply('${cookie.id}')" title="配置AI回复" ${!isEnabled ? 'disabled' : ''}>
-                <i class="bi bi-robot"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-info" onclick="copyCookie('${cookie.id}', '${cookie.value}')" title="复制Cookie">
-                <i class="bi bi-clipboard"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-danger" onclick="delCookie('${cookie.id}')" title="删除账号">
-                <i class="bi bi-trash"></i>
-            </button>
-            </div>
-        </td>
-        `;
-        tbody.appendChild(tr);
-    });
+    tr.innerHTML = `
+    <td class="align-middle">
+        <div class="cookie-id">
+        <strong class="text-primary"></strong>
+        </div>
+    </td>
+    <td class="align-middle">
+        <div class="cookie-value" title="点击复制Cookie" style="font-family: monospace; font-size: 0.875rem; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;">
+        </div>
+    </td>
+    <td class="align-middle">
+        <span class="badge">
+        </span>
+    </td>
+    <td class="align-middle">
+        <div class="d-flex align-items-center gap-2">
+        <label class="status-toggle" title="${isEnabled ? '点击禁用' : '点击启用'}">
+            <input type="checkbox" ${isEnabled ? 'checked' : ''} onchange="toggleAccountStatus('${cookie.id}', this.checked)">
+            <span class="status-slider"></span>
+        </label>
+        <span class="status-badge ${isEnabled ? 'enabled' : 'disabled'}" title="${isEnabled ? '账号已启用' : '账号已禁用'}">
+            <i class="bi bi-${isEnabled ? 'check-circle-fill' : 'x-circle-fill'}"></i>
+        </span>
+        </div>
+    </td>
+    <td class="align-middle">
+        ${defaultReplyBadge}
+    </td>
+    <td class="align-middle">
+        ${aiReplyBadge}
+    </td>
+    <td class="align-middle">
+        <div class="d-flex align-items-center gap-2">
+        <label class="status-toggle" title="${autoConfirm ? '点击关闭自动确认发货' : '点击开启自动确认发货'}">
+            <input type="checkbox" ${autoConfirm ? 'checked' : ''} onchange="toggleAutoConfirm('${cookie.id}', this.checked)">
+            <span class="status-slider"></span>
+        </label>
+        <span class="status-badge ${autoConfirm ? 'enabled' : 'disabled'}" title="${autoConfirm ? '自动确认发货已开启' : '自动确认发货已关闭'}">
+            <i class="bi bi-${autoConfirm ? 'truck' : 'truck-flatbed'}"></i>
+        </span>
+        </div>
+    </td>
+    <td class="align-middle">
+        <div class="btn-group" role="group">
+        <button class="btn btn-sm btn-outline-primary" onclick="editCookieInline('${cookie.id}', '${cookie.value}')" title="修改Cookie" ${!isEnabled ? 'disabled' : ''}>
+            <i class="bi bi-pencil"></i>
+        </button>
+        <button class="btn btn-sm btn-outline-success" onclick="goToAutoReply('${cookie.id}')" title="${isEnabled ? '设置自动回复' : '配置关键词 (账号已禁用)'}">
+            <i class="bi bi-arrow-right-circle"></i>
+        </button>
+        <button class="btn btn-sm btn-outline-warning" onclick="configAIReply('${cookie.id}')" title="配置AI回复" ${!isEnabled ? 'disabled' : ''}>
+            <i class="bi bi-robot"></i>
+        </button>
+        <button class="btn btn-sm btn-outline-info" onclick="copyCookie('${cookie.id}', '${cookie.value}')" title="复制Cookie">
+            <i class="bi bi-clipboard"></i>
+        </button>
+        <button class="btn btn-sm btn-outline-danger" onclick="delCookie('${cookie.id}')" title="删除账号">
+            <i class="bi bi-trash"></i>
+        </button>
+        </div>
+    </td>
+    `;
 
-    // 为Cookie值添加点击复制功能
-    document.querySelectorAll('.cookie-value').forEach(element => {
-        element.style.cursor = 'pointer';
-        element.addEventListener('click', function() {
-        const cookieValue = this.textContent;
-        if (cookieValue && cookieValue !== '未设置') {
-            navigator.clipboard.writeText(cookieValue).then(() => {
-            window.App.showToast('Cookie已复制到剪贴板', 'success');
-            }).catch(() => {
-            window.App.showToast('复制失败，请手动复制', 'error');
-            });
+    tr.querySelector('.cookie-id strong').textContent = cookie.id;
+    const cookieValueDiv = tr.querySelector('.cookie-value');
+    cookieValueDiv.textContent = cookie.value || '未设置';
+    const keywordBadge = tr.querySelector('.align-middle:nth-child(3) .badge');
+    keywordBadge.textContent = `${cookie.keywordCount} 个关键词`;
+    keywordBadge.className = `badge ${cookie.keywordCount > 0 ? 'bg-success' : 'bg-secondary'}`;
+
+    return tr;
+}
+
+function setupCookieClickHandlers() {
+    const tbody = document.querySelector('#cookieTable tbody');
+    tbody.addEventListener('click', function(e) {
+        const element = e.target.closest('.cookie-value');
+        if (element) {
+            const cookieValue = element.textContent;
+            if (cookieValue && cookieValue !== '未设置') {
+                navigator.clipboard.writeText(cookieValue).then(() => {
+                    window.App.showToast('Cookie已复制到剪贴板', 'success');
+                }).catch(() => {
+                    window.App.showToast('复制失败，请手动复制', 'error');
+                });
+            }
         }
-        });
     });
-
-    } catch (err) {
-    // 错误已在fetchJSON中处理
-    } finally {
-    window.App.toggleLoading(false);
-    }
 }
 
 // 复制Cookie
@@ -203,11 +227,11 @@ export async function delCookie(id) {
     if (!confirm(`确定要删除账号 "${id}" 吗？此操作不可恢复。`)) return;
 
     try {
-    await window.API.cookies.delete(id);
-    window.App.showToast(`账号 "${id}" 已删除`, 'success');
-    loadCookies();
+        await window.API.cookies.delete(id);
+        window.App.showToast(`账号 "${id}" 已删除`, 'success');
+        loadCookies();
     } catch (err) {
-    // 错误已在fetchJSON中处理
+        // 错误已在fetchJSON中处理
     }
 }
 
@@ -355,15 +379,13 @@ export async function toggleAccountStatus(accountId, enabled) {
         // 如果禁用的账号在自动回复页面被选中，更新显示
         const accountSelect = document.getElementById('accountSelect');
         if (accountSelect && accountSelect.value === accountId) {
-        if (!enabled) {
-            // 更新徽章显示禁用状态
-            updateAccountBadge(accountId, false);
-            window.App.showToast('账号已禁用，配置的关键词不会参与自动回复', 'warning');
-        } else {
-            // 更新徽章显示启用状态
-            updateAccountBadge(accountId, true);
-            window.App.showToast('账号已启用，配置的关键词将参与自动回复', 'success');
-        }
+            if (!enabled) {
+                updateAccountBadge(accountId, false);
+                window.App.showToast('账号已禁用，配置的关键词不会参与自动回复', 'warning');
+            } else {
+                updateAccountBadge(accountId, true);
+                window.App.showToast('账号已启用，配置的关键词将参与自动回复', 'success');
+            }
         }
 
     } catch (error) {

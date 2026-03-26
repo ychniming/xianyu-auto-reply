@@ -15,9 +15,6 @@ from loguru import logger
 from app.core.keyword_matcher.regex_handler import RegexHandler
 from app.core.keyword_matcher.constants import (
     MATCH_TYPE_REGEX,
-    MAX_REGEX_LENGTH,
-    MAX_REGEX_NESTING_DEPTH,
-    MAX_REGEX_QUANTIFIER_REPEAT,
 )
 
 

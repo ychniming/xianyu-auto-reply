@@ -33,10 +33,10 @@
 ### 监控命令
 
 ```bash
-# SSH连接服务器
-ssh -i ~/.ssh/niming.pem ubuntu@43.134.89.158
+# SSH 连接服务器（新服务器）
+ssh -i ~/.ssh/niming2.pem ubuntu@122.51.107.43
 
-# 检查Docker容器状态
+# 检查 Docker 容器状态
 sudo docker ps -a
 sudo docker stats xianyu-auto-reply
 
@@ -51,7 +51,7 @@ uptime
 # 检查端口监听
 ss -tlnp | grep -E '8080|80|443'
 
-# 检查Nginx状态
+# 检查 Nginx 状态
 sudo /www/server/nginx/sbin/nginx -t
 sudo systemctl status nginx
 ```
@@ -79,10 +79,10 @@ fi
 
 | 日志类型 | 位置 | 保留时间 |
 |---------|------|---------|
-| 应用日志 | /www/wwwroot/xianyu-auto-reply/logs/xianyu_*.log | 7天 |
-| Nginx访问日志 | /www/server/nginx/logs/access.log | 30天 |
-| Nginx错误日志 | /www/server/nginx/logs/error.log | 30天 |
-| Docker日志 | sudo docker logs xianyu-auto-reply | 实时 |
+| 应用日志 | /www/wwwroot/xianyu-auto-reply/logs/xianyu_*.log | 7 天 |
+| Nginx 访问日志 | /www/server/nginx/logs/access.log | 30 天 |
+| Nginx 错误日志 | /www/server/nginx/logs/error.log | 30 天 |
+| Docker 日志 | sudo docker logs xianyu-auto-reply | 实时 |
 
 ### 日志分析
 

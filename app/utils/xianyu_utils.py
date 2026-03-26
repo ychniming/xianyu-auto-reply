@@ -3,7 +3,6 @@
 提供签名生成、Cookie转换、消息解密等工具函数
 """
 import base64
-import json
 import subprocess
 from functools import partial
 import time
@@ -11,8 +10,6 @@ import hashlib
 import struct
 import os
 from typing import Any, Dict, List, Optional
-
-import blackboxprotobuf
 from loguru import logger
 
 subprocess.Popen = partial(subprocess.Popen, encoding="utf-8")

@@ -3,7 +3,7 @@
 Provides metrics collection and exposition for monitoring API performance.
 """
 import time
-from typing import Callable, Optional, Dict, Any
+from typing import Callable, Optional, Dict
 from functools import wraps
 from collections import defaultdict
 

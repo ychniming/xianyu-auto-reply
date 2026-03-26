@@ -1,20 +1,17 @@
 // 认证模块 - 认证相关函数和 Token 管理
-import { authToken, apiBase, updateAuthToken } from './utils.js';
-import { } from './api.js';
-import { logoutAPI, verifyAuthAPI, generateQRCodeAPI, checkQRCodeStatusAPI, recheckQRCodeAPI } from './api.js';
+import { authToken, updateAuthToken } from './utils.js';
 
 // 检查认证状态
 export async function checkAuth() {
-    if (!authToken) {
+    if (!authToken.value) {
         window.location.href = '/';
         return false;
     }
 
     try {
-        const response = await verifyAuthAPI();
-        const result = await response.json();
+        // window.API.auth.verify() 返回的已经是 data 部分
+        const data = await window.API.auth.verify();
 
-        const data = result.data;
         if (!data || !data.authenticated) {
             localStorage.removeItem('auth_token');
             updateAuthToken(null);
@@ -49,7 +46,7 @@ export async function checkAuth() {
 export async function logout() {
     try {
         if (authToken.value) {
-            await logoutAPI();
+            await window.API.auth.logout();
         }
         localStorage.removeItem('auth_token');
         updateAuthToken(null);
@@ -64,8 +61,22 @@ export async function logout() {
 
 // ==================== 扫码登录相关函数 ====================
 
+const MAX_QR_POLL_COUNT = 150;
+const QR_POLL_INTERVAL = 2000;
+
+function isValidUrl(urlString) {
+    if (!urlString || typeof urlString !== 'string') return false;
+    try {
+        const url = new URL(urlString);
+        return url.protocol === 'https:' && url.hostname.includes('taobao.com') || url.hostname.includes('alibaba.com') || url.hostname.includes('goofish.com');
+    } catch {
+        return false;
+    }
+}
+
 let qrCodeCheckInterval = null;
 let qrCodeSessionId = null;
+let qrPollCount = 0;
 
 // 显示扫码登录模态框
 export function showQRCodeLogin() {
@@ -105,7 +116,7 @@ export async function generateQRCode() {
     try {
         showQRCodeLoading();
 
-        const response = await generateQRCodeAPI();
+        const response = await window.API.qrLogin.generate();
 
         if (response.ok) {
             const data = await response.json();
@@ -167,18 +178,28 @@ export function startQRCodeCheck() {
         clearInterval(qrCodeCheckInterval);
     }
 
+    qrPollCount = 0;
+
     document.getElementById('statusSpinner').style.display = 'inline-block';
     document.getElementById('statusText').textContent = '等待扫码...';
 
-    qrCodeCheckInterval = setInterval(checkQRCodeStatus, 2000); // 每2秒检查一次
+    qrCodeCheckInterval = setInterval(checkQRCodeStatus, QR_POLL_INTERVAL);
 }
 
 // 检查二维码状态
 export async function checkQRCodeStatus() {
     if (!qrCodeSessionId) return;
 
+    qrPollCount++;
+
+    if (qrPollCount >= MAX_QR_POLL_COUNT) {
+        clearQRCodeCheck();
+        showQRCodeError('登录超时，请刷新页面重试');
+        return;
+    }
+
     try {
-        const response = await checkQRCodeStatusAPI(qrCodeSessionId);
+        const response = await window.API.qrLogin.checkStatus(qrCodeSessionId);
 
         if (response.ok) {
             const data = await response.json();
@@ -213,65 +234,82 @@ export async function checkQRCodeStatus() {
                     showVerificationRequired(data);
                     break;
             }
+        } else {
+            console.warn(`检查状态请求失败: HTTP ${response.status}`);
         }
     } catch (error) {
         console.error('检查二维码状态失败:', error);
+        if (qrPollCount >= Math.floor(MAX_QR_POLL_COUNT / 3)) {
+            clearQRCodeCheck();
+            showQRCodeError('网络错误，请检查网络连接后刷新重试');
+        }
     }
 }
 
 // 显示需要验证的提示
 export function showVerificationRequired(data) {
-    if (data.verification_url) {
-        // 隐藏二维码区域
-        document.getElementById('qrCodeContainer').style.display = 'none';
-        document.getElementById('qrCodeImage').style.display = 'none';
+    if (!data.verification_url) {
+        showQRCodeError('验证信息无效，请刷新重试');
+        return;
+    }
 
-        // 显示验证提示
-        const verificationHtml = `
-            <div class="text-center">
-            <div class="mb-4">
-                <i class="bi bi-shield-exclamation text-warning" style="font-size: 4rem;"></i>
-            </div>
-            <h5 class="text-warning mb-3">账号需要手机验证</h5>
-            <div class="alert alert-warning border-0 mb-4">
-                <i class="bi bi-info-circle me-2"></i>
-                <strong>检测到账号存在风控，需要进行手机验证才能完成登录</strong>
-            </div>
-            <div class="mb-4">
-                <p class="text-muted mb-3">请点击下方按钮，在新窗口中完成手机验证：</p>
-                <a href="${data.verification_url}" target="_blank" class="btn btn-warning btn-lg">
-                <i class="bi bi-phone me-2"></i>
-                打开手机验证页面
-                </a>
-            </div>
-            <div class="alert alert-info border-0">
-                <i class="bi bi-lightbulb me-2"></i>
-                <small>
-                <strong>验证步骤：</strong><br>
-                1. 点击上方按钮打开验证页面<br>
-                2. 按照页面提示完成手机验证<br>
-                3. 验证完成后，点击下方按钮继续登录
-                </small>
-            </div>
-            <div class="mt-3">
-                <button onclick="continueAfterVerification()" class="btn btn-success">
-                <i class="bi bi-check-circle me-2"></i>
-                验证完成，继续登录
-                </button>
-            </div>
-            </div>
-        `;
+    if (!isValidUrl(data.verification_url)) {
+        showQRCodeError('验证链接无效，请刷新重试');
+        return;
+    }
 
-        // 创建验证提示容器
-        let verificationContainer = document.getElementById('verificationContainer');
-        if (!verificationContainer) {
-            verificationContainer = document.createElement('div');
-            verificationContainer.id = 'verificationContainer';
-            document.querySelector('#qrCodeLoginModal .modal-body').appendChild(verificationContainer);
-        }
+    // 隐藏二维码区域
+    document.getElementById('qrCodeContainer').style.display = 'none';
+    document.getElementById('qrCodeImage').style.display = 'none';
 
-        verificationContainer.innerHTML = verificationHtml;
-        verificationContainer.style.display = 'block';
+    const safeUrl = data.verification_url;
+
+    // 显示验证提示
+    const verificationHtml = `
+        <div class="text-center">
+        <div class="mb-4">
+            <i class="bi bi-shield-exclamation text-warning" style="font-size: 4rem;"></i>
+        </div>
+        <h5 class="text-warning mb-3">账号需要手机验证</h5>
+        <div class="alert alert-warning border-0 mb-4">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>检测到账号存在风控，需要进行手机验证才能完成登录</strong>
+        </div>
+        <div class="mb-4">
+            <p class="text-muted mb-3">请点击下方按钮，在新窗口中完成手机验证：</p>
+            <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-warning btn-lg">
+            <i class="bi bi-phone me-2"></i>
+            打开手机验证页面
+            </a>
+        </div>
+        <div class="alert alert-info border-0">
+            <i class="bi bi-lightbulb me-2"></i>
+            <small>
+            <strong>验证步骤：</strong><br>
+            1. 点击上方按钮打开验证页面<br>
+            2. 按照页面提示完成手机验证<br>
+            3. 验证完成后，点击下方按钮继续登录
+            </small>
+        </div>
+        <div class="mt-3">
+            <button onclick="continueAfterVerification()" class="btn btn-success">
+            <i class="bi bi-check-circle me-2"></i>
+            验证完成，继续登录
+            </button>
+        </div>
+        </div>
+    `;
+
+    // 创建验证提示容器
+    let verificationContainer = document.getElementById('verificationContainer');
+    if (!verificationContainer) {
+        verificationContainer = document.createElement('div');
+        verificationContainer.id = 'verificationContainer';
+        document.querySelector('#qrCodeLoginModal .modal-body').appendChild(verificationContainer);
+    }
+
+    verificationContainer.innerHTML = verificationHtml;
+    verificationContainer.style.display = 'block';
 
         // 显示Toast提示
         window.App.showToast('账号需要手机验证，请按照提示完成验证', 'warning');

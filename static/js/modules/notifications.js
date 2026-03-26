@@ -1,6 +1,5 @@
 // 通知渠道管理模块 - 通知渠道和消息通知相关函数
 import { apiBase, authToken } from './utils.js';
-import { } from './api.js';
 
 // 通知渠道类型配置
 export const channelTypeConfigs = {

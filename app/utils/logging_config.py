@@ -4,10 +4,9 @@ Provides JSON formatted logging with distributed tracing capabilities.
 """
 import json
 import sys
-import time
 import uuid
 from contextvars import ContextVar
-from typing import Optional, Dict, Any
+from typing import Optional
 from pathlib import Path
 
 from loguru import logger

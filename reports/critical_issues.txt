@@ -1,0 +1,3 @@
+## 新鲜度问题
+- D:\我的\创业\xianyu-auto-reply-main\docs\reference\deletion-log.md: 缺少 lastUpdated 字段
+- D:\我的\创业\xianyu-auto-reply-main\docs\reference\import-validation-report.md: 缺少 lastUpdated 字段

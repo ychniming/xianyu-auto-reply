@@ -1,7 +1,5 @@
 // 系统管理模块 - 系统配置、备份、缓存管理相关函数
-import { apiBase, authToken } from './utils.js';
-import { fetchJSON } from './api.js';
-import { clearKeywordCache } from './utils.js';
+import { apiBase, authToken, clearKeywordCache } from './utils.js';
 
 // 加载表格数据（支持多种类型）
 export async function loadTableData(tableType) {

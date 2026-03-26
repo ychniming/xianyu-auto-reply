@@ -1,7 +1,7 @@
 const stores = {};
 
 export const Store = {
-    create: function(name, initialState = {}) {
+    create: function(name, initialState = {}, cachePattern = null) {
         if (stores[name]) {
             console.warn(`Store "${name}" already exists`);
             return stores[name];
@@ -20,6 +20,9 @@ export const Store = {
             setState: function(newState) {
                 const prev = { ...state };
                 state = { ...state, ...newState };
+                if (cachePattern && window.clearApiCache) {
+                    window.clearApiCache(cachePattern);
+                }
                 listeners.forEach(listener => {
                     try {
                         listener(state, prev);

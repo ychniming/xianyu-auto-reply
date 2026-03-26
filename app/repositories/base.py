@@ -5,7 +5,7 @@
 import sqlite3
 import os
 import threading
-from typing import List, Tuple, Dict, Optional, Any
+from typing import Optional
 from loguru import logger
 
 from .migrations import DatabaseMigrator, DatabaseUpgrader

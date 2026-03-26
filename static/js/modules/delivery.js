@@ -1,6 +1,5 @@
 // 自动发货模块 - Delivery Rules Management
 import { apiBase, authToken } from './utils.js';
-import { } from './api.js';
 
 // ==================== 自动发货功能 ====================
 

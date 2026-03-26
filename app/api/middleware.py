@@ -11,7 +11,6 @@ from starlette.responses import Response
 from app.utils.logging_config import (
     set_trace_id, set_request_id, generate_trace_id
 )
-from .limiter import limiter
 
 
 def setup_middleware(app: FastAPI) -> None:

@@ -151,7 +151,6 @@ def update_item(cookie_id: str, item_id: str, item_data: Dict, current_user: Opt
 def delete_item(cookie_id: str, item_id: str, current_user: Optional[Dict[str, Any]] = Depends(get_current_user)):
     """删除商品信息"""
     try:
-        from app.repositories import db_manager
         return {'msg': 'deleted'}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

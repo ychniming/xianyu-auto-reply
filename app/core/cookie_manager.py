@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import time
-from typing import Dict, List, Optional, Tuple, Any, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 from loguru import logger
 

@@ -6,7 +6,6 @@ from loguru import logger
 from .base import BaseDB
 from .cookie_repo import CookieRepository
 from .keyword_repo import KeywordRepository
-from .keyword_constants import VALID_MATCH_TYPES
 from .user_repo import UserRepository
 from .notification_repo import NotificationRepository
 from .card_repo import CardRepository

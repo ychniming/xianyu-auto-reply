@@ -5,6 +5,7 @@
 
 :root {
     /* 主色调 */
+    --primary: #4f46e5;
     --primary-color: #4f46e5;
     --primary-hover: #4338ca;
     --primary-light: #6366f1;
@@ -30,6 +31,7 @@
     --info-border: #0dcaf0;
 
     /* 背景色 */
+    --bg-white: #ffffff;
     --light-color: #f9fafb;
     --dark-color: #1f2937;
     --white-color: #ffffff;
@@ -42,6 +44,7 @@
     --border-dark: #d1d5db;
 
     /* 文本颜色 */
+    --text-white: #ffffff;
     --text-primary: #374151;
     --text-secondary: #6b7280;
     --text-muted: #9ca3af;

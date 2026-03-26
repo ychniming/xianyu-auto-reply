@@ -1,0 +1,103 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main  # 推送到 main 分支时触发部署
+  pull_request:
+    branches:
+      - main  # PR 合并到 main 分支时也触发（可选）
+  workflow_dispatch:  # 允许手动触发部署
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # 获取最近两次提交，用于差异比较
+          
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --name-only HEAD~1 HEAD | grep -qvE '^\.github/'; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Set up Docker Buildx
+        if: steps.changes.outputs.has_changes == 'true'
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Build Docker image (cached)
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          cd deploy
+          docker-compose build --no-cache
+          
+      - name: Deploy to Server via SSH
+        if: steps.changes.outputs.has_changes == 'true'
+        uses: easingthemes/ssh-deploy@v4
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.SERVER_HOST }}
+          REMOTE_USER: ${{ secrets.SERVER_USER }}
+          SOURCE: "."
+          TARGET: ${{ secrets.DEPLOY_PATH }}
+          ARGS: "-avz --delete --exclude='.git' --exclude='node_modules' --exclude='.env' --exclude='logs' --exclude='data' --exclude='.github'"
+          
+      - name: Execute Deployment Commands
+        if: steps.changes.outputs.has_changes == 'true'
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            echo "开始部署..."
+            cd ${{ secrets.DEPLOY_PATH }}/deploy
+            
+            # 停止旧服务
+            echo "停止旧服务..."
+            sudo docker-compose down
+            
+            # 重新构建并启动
+            echo "构建并启动服务..."
+            sudo docker-compose up -d --build
+            
+            # 等待服务启动
+            echo "等待服务启动..."
+            sleep 10
+            
+            # 健康检查
+            echo "执行健康检查..."
+            max_attempts=5
+            attempt=1
+            while [ $attempt -le $max_attempts ]; do
+              if curl -f -s http://localhost:8080/health > /dev/null 2>&1; then
+                echo "✅ 健康检查通过"
+                exit 0
+              fi
+              echo "等待服务就绪... ($attempt/$max_attempts)"
+              sleep 2
+              ((attempt++))
+            done
+            
+            echo "❌ 健康检查失败"
+            sudo docker-compose logs
+            exit 1
+            
+      - name: Notify Success
+        if: success()
+        run: |
+          echo "✅ 部署成功完成！"
+          echo "访问地址：http://${{ secrets.SERVER_HOST }}:8080"
+          
+      - name: Notify Failure
+        if: failure()
+        run: |
+          echo "❌ 部署失败，请检查日志"
+          exit 1
