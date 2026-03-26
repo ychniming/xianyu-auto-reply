@@ -200,6 +200,8 @@ class DatabaseUpgrader:
                 Version("1.3"): (self._upgrade_to_1_3, "1.3"),
                 Version("1.4"): (self._upgrade_to_1_4, "1.4"),
                 Version("1.5"): (self._upgrade_to_1_5, "1.5"),
+                Version("1.6"): (self._upgrade_to_1_6, "1.6"),
+                Version("1.7"): (self._upgrade_to_1_7, "1.7"),
             }
 
             target_versions = sorted(upgrade_mapping.keys())
@@ -347,6 +349,49 @@ class DatabaseUpgrader:
                 cursor.execute("DROP TABLE IF EXISTS keywords_new")
             except sqlite3.OperationalError:
                 pass
+            raise
+
+    def _upgrade_to_1_6(self, cursor) -> None:
+        """升级到版本1.6 - 为ai_reply_settings表添加api_key_encrypted字段"""
+        try:
+            logger.info("开始为ai_reply_settings表添加api_key_encrypted字段...")
+
+            # 检查字段是否已存在
+            cursor.execute("PRAGMA table_info(ai_reply_settings)")
+            columns = [col[1] for col in cursor.fetchall()]
+
+            if 'api_key_encrypted' in columns:
+                logger.info("ai_reply_settings表已存在api_key_encrypted字段，跳过迁移")
+                return
+
+            # 添加新字段
+            cursor.execute("ALTER TABLE ai_reply_settings ADD COLUMN api_key_encrypted TEXT")
+            logger.info("ai_reply_settings表添加api_key_encrypted字段完成")
+        except Exception as e:
+            logger.error(f"升级ai_reply_settings表失败: {e}")
+            raise
+
+    def _upgrade_to_1_7(self, cursor) -> None:
+        """升级到版本1.7 - 为cookies表添加value_encrypted字段"""
+        try:
+            logger.info("开始为cookies表添加value_encrypted字段...")
+
+            # 检查字段是否已存在
+            cursor.execute("PRAGMA table_info(cookies)")
+            columns = [col[1] for col in cursor.fetchall()]
+
+            if 'value_encrypted' in columns:
+                logger.info("cookies表已存在value_encrypted字段，跳过迁移")
+                return
+
+            # 添加新字段
+            cursor.execute("ALTER TABLE cookies ADD COLUMN value_encrypted TEXT")
+            logger.info("cookies表添加value_encrypted字段完成")
+            
+            # 注意：不在这里进行数据迁移，数据迁移由独立的迁移脚本完成
+            logger.info("请运行 scripts/migrate_cookies.py 脚本迁移现有Cookie数据到加密存储")
+        except Exception as e:
+            logger.error(f"升级cookies表失败: {e}")
             raise
 
     def _update_admin_user_id(self, cursor) -> None:

@@ -291,6 +291,65 @@ class CardRepository:
                 self.conn.rollback()
                 return False
 
+    def save_cards_batch_with_transaction(self, cards_data: List[Dict[str, Any]], user_id: int = None) -> bool:
+        """批量保存卡券（使用事务）
+
+        使用事务管理器确保批量操作的原子性，失败时自动回滚
+
+        Args:
+            cards_data: 卡券数据列表
+            user_id: 用户ID
+
+        Returns:
+            bool: 保存是否成功
+
+        Example:
+            cards_data = [
+                {
+                    'name': '卡券1',
+                    'type': 'text',
+                    'text_content': '这是卡券内容',
+                    'description': '描述'
+                },
+                {
+                    'name': '卡券2',
+                    'type': 'api',
+                    'api_config': {'url': 'http://example.com'},
+                    'description': 'API卡券'
+                }
+            ]
+        """
+        try:
+            # 使用事务管理器
+            with self._db.transaction:
+                for card_data in cards_data:
+                    card_id = self.create_card(
+                        name=card_data.get('name'),
+                        card_type=card_data.get('type'),
+                        api_config=card_data.get('api_config'),
+                        text_content=card_data.get('text_content'),
+                        data_content=card_data.get('data_content'),
+                        image_url=card_data.get('image_url'),
+                        description=card_data.get('description'),
+                        delay_seconds=card_data.get('delay_seconds', 0),
+                        is_multi_spec=card_data.get('is_multi_spec', False),
+                        spec_name=card_data.get('spec_name'),
+                        spec_value=card_data.get('spec_value'),
+                        user_id=user_id
+                    )
+
+                    if not card_id:
+                        raise Exception(f"创建卡券失败: {card_data.get('name')}")
+
+                    logger.debug(f"批量保存卡券: {card_data.get('name')} (ID: {card_id})")
+
+                logger.info(f"批量保存卡券成功，共处理 {len(cards_data)} 张卡券")
+                return True
+
+        except Exception as e:
+            logger.error(f"批量保存卡券失败，已回滚所有操作: {e}")
+            return False
+
     def consume_batch_data(self, card_id: int) -> Optional[Dict[str, Any]]:
         """消费卡券的批次数据
 

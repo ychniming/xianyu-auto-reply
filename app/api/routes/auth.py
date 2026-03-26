@@ -211,7 +211,21 @@ async def logout(credentials: Optional[HTTPAuthorizationCredentials] = Depends(s
     """登出接口"""
     if credentials:
         from app.repositories import db_manager
-        db_manager.delete_session(credentials.credentials)
+        
+        token = credentials.credentials
+        
+        # 获取 session 信息以获取过期时间
+        session = db_manager.get_session(token)
+        if session:
+            # 将 Token 添加到黑名单
+            expires_at = session.get('expires_at')
+            if expires_at:
+                db_manager.add_token_to_blacklist(token, expires_at)
+                logger.info(f"【{session.get('username')}#{session.get('user_id')}】Token 已加入黑名单")
+        
+        # 删除 session
+        db_manager.delete_session(token)
+        
     return success(message="已登出")
 
 

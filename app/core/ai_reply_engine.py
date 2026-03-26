@@ -5,7 +5,9 @@ AI回复引擎模块
 """
 
 import json
-from typing import Dict, List, Optional, Any
+import time
+from collections import OrderedDict
+from typing import Dict, List, Optional, Any, Tuple
 
 from loguru import logger
 from openai import OpenAI
@@ -33,16 +35,42 @@ class AIReplyEngine:
     提供智能回复功能，包括意图检测和多轮议价处理。
 
     Attributes:
-        clients: 存储不同账号的OpenAI客户端
+        clients: 存储不同账号的OpenAI客户端（LRU缓存）
+        client_timestamps: 记录客户端最后使用时间
         agents: 存储不同账号的Agent实例
         default_prompts: 默认提示词模板
+        max_clients: 最大客户端缓存数量
+        client_expire_hours: 客户端过期时间（小时）
+        cache_hits: 缓存命中次数
+        cache_misses: 缓存未命中次数
+        cleanup_count: 清理次数
     """
 
-    def __init__(self) -> None:
-        """初始化AI回复引擎"""
-        self.clients: Dict[str, OpenAI] = {}
+    def __init__(
+        self,
+        max_clients: int = 100,
+        client_expire_hours: int = 24
+    ) -> None:
+        """初始化AI回复引擎
+
+        Args:
+            max_clients: 最大客户端缓存数量，默认100
+            client_expire_hours: 客户端过期时间（小时），默认24小时
+        """
+        self.clients: OrderedDict[str, OpenAI] = OrderedDict()
+        self.client_timestamps: Dict[str, float] = {}
         self.agents: Dict[str, Any] = {}
         self.default_prompts: Dict[str, str] = {}
+        
+        # 缓存配置
+        self.max_clients = max_clients
+        self.client_expire_hours = client_expire_hours
+        
+        # 缓存统计
+        self.cache_hits = 0
+        self.cache_misses = 0
+        self.cleanup_count = 0
+        
         self._init_default_prompts()
 
     def _init_default_prompts(self) -> None:
@@ -87,28 +115,57 @@ class AIReplyEngine:
     def get_client(self, cookie_id: str) -> Optional[OpenAI]:
         """获取指定账号的OpenAI客户端
 
+        使用LRU缓存策略，当缓存满时移除最久未使用的客户端。
+
         Args:
             cookie_id: 账号ID
 
         Returns:
             OpenAI客户端实例，如果未启用AI或无API Key则返回None
         """
-        if cookie_id not in self.clients:
-            settings = db_manager.get_ai_reply_settings(cookie_id)
-            if not settings["ai_enabled"] or not settings["api_key"]:
-                return None
+        # 检查缓存中是否存在
+        if cookie_id in self.clients:
+            # 缓存命中，移动到末尾（表示最近使用）
+            self.clients.move_to_end(cookie_id)
+            self.client_timestamps[cookie_id] = time.time()
+            self.cache_hits += 1
+            logger.debug(f"缓存命中: {cookie_id}, 缓存大小: {len(self.clients)}")
+            return self.clients[cookie_id]
+        
+        # 缓存未命中
+        self.cache_misses += 1
+        
+        # 获取AI设置
+        settings = db_manager.get_ai_reply_settings(cookie_id)
+        if not settings["ai_enabled"] or not settings["api_key"]:
+            return None
 
-            try:
-                self.clients[cookie_id] = OpenAI(
-                    api_key=settings["api_key"],
-                    base_url=settings["base_url"]
-                )
-                logger.info(f"为账号 {cookie_id} 创建OpenAI客户端")
-            except Exception as e:
-                logger.error(f"创建OpenAI客户端失败 {cookie_id}: {e}")
-                return None
-
-        return self.clients[cookie_id]
+        try:
+            # 检查缓存是否已满
+            if len(self.clients) >= self.max_clients:
+                # 移除最久未使用的客户端（字典第一个元素）
+                oldest_key = next(iter(self.clients))
+                del self.clients[oldest_key]
+                del self.client_timestamps[oldest_key]
+                logger.info(f"缓存已满，移除最久未使用的客户端: {oldest_key}")
+            
+            # 创建新客户端
+            client = OpenAI(
+                api_key=settings["api_key"],
+                base_url=settings["base_url"]
+            )
+            self.clients[cookie_id] = client
+            self.client_timestamps[cookie_id] = time.time()
+            
+            logger.info(
+                f"为账号 {cookie_id} 创建OpenAI客户端, "
+                f"缓存大小: {len(self.clients)}/{self.max_clients}"
+            )
+            return client
+            
+        except Exception as e:
+            logger.error(f"创建OpenAI客户端失败 {cookie_id}: {e}")
+            return None
 
     def is_ai_enabled(self, cookie_id: str) -> bool:
         """检查指定账号是否启用AI回复
@@ -363,11 +420,71 @@ class AIReplyEngine:
             cookie_id: 账号ID，如果为None则清除所有缓存
         """
         if cookie_id:
-            self.clients.pop(cookie_id, None)
-            logger.info(f"清理账号 {cookie_id} 的客户端缓存")
+            if cookie_id in self.clients:
+                del self.clients[cookie_id]
+                del self.client_timestamps[cookie_id]
+                logger.info(f"清理账号 {cookie_id} 的客户端缓存")
         else:
             self.clients.clear()
+            self.client_timestamps.clear()
             logger.info("清理所有客户端缓存")
+
+    def cleanup_expired_clients(self) -> int:
+        """清理过期客户端
+
+        清理超过指定时间未使用的客户端。
+
+        Returns:
+            int: 清理的客户端数量
+        """
+        current_time = time.time()
+        expire_seconds = self.client_expire_hours * 3600
+        expired_keys = []
+        
+        # 找出所有过期的客户端
+        for cookie_id, last_used in self.client_timestamps.items():
+            if current_time - last_used > expire_seconds:
+                expired_keys.append(cookie_id)
+        
+        # 删除过期客户端
+        for cookie_id in expired_keys:
+            del self.clients[cookie_id]
+            del self.client_timestamps[cookie_id]
+        
+        if expired_keys:
+            self.cleanup_count += 1
+            logger.info(
+                f"清理过期客户端: {len(expired_keys)} 个, "
+                f"剩余缓存大小: {len(self.clients)}"
+            )
+        
+        return len(expired_keys)
+
+    def get_cache_stats(self) -> Dict[str, Any]:
+        """获取缓存统计信息
+
+        Returns:
+            Dict: 包含缓存命中率、大小、清理次数等统计信息
+        """
+        total_requests = self.cache_hits + self.cache_misses
+        hit_rate = (self.cache_hits / total_requests * 100) if total_requests > 0 else 0.0
+        
+        return {
+            "cache_size": len(self.clients),
+            "max_cache_size": self.max_clients,
+            "cache_hits": self.cache_hits,
+            "cache_misses": self.cache_misses,
+            "hit_rate": f"{hit_rate:.2f}%",
+            "cleanup_count": self.cleanup_count,
+            "client_expire_hours": self.client_expire_hours,
+        }
+
+    def reset_cache_stats(self) -> None:
+        """重置缓存统计信息"""
+        self.cache_hits = 0
+        self.cache_misses = 0
+        self.cleanup_count = 0
+        logger.info("缓存统计信息已重置")
 
 
 # 全局AI回复引擎实例

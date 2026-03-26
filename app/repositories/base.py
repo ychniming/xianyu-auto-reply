@@ -142,6 +142,7 @@ class BaseDB:
                 ai_enabled BOOLEAN DEFAULT FALSE,
                 model_name TEXT DEFAULT 'qwen-plus',
                 api_key TEXT,
+                api_key_encrypted TEXT,
                 base_url TEXT DEFAULT 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 max_discount_percent INTEGER DEFAULT 10,
                 max_discount_amount INTEGER DEFAULT 100,
@@ -318,12 +319,24 @@ class BaseDB:
             )
             ''')
 
+            # 创建Token黑名单表
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS token_blacklist (
+                token TEXT PRIMARY KEY,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                expires_at TIMESTAMP NOT NULL
+            )
+            ''')
+
             # 创建索引
             cursor.execute('''
             CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id)
             ''')
             cursor.execute('''
             CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions(expires_at)
+            ''')
+            cursor.execute('''
+            CREATE INDEX IF NOT EXISTS idx_token_blacklist_expires_at ON token_blacklist(expires_at)
             ''')
 
             # Create indexes for keywords table

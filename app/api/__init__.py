@@ -22,6 +22,7 @@ from .middleware import setup_middleware, create_startup_handler
 from .metrics import REQUEST_COUNT, REQUEST_LATENCY, ACTIVE_REQUESTS
 from .models import RequestModel, ResponseModel
 from .helpers import read_html_file
+from .exception_handlers import register_exception_handlers
 
 from .routes import auth, cookies, keywords, cards, items, settings, admin
 
@@ -97,6 +98,9 @@ def create_app() -> FastAPI:
         docs_url="/docs",
         redoc_url="/redoc"
     )
+
+    # 注册全局异常处理器
+    register_exception_handlers(app)
 
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)

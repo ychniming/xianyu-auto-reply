@@ -11,6 +11,7 @@ from loguru import logger
 
 from app.api.dependencies import get_current_user
 from app.api.response import success, updated, deleted
+from app.api.decorators import check_resource_access
 
 router = APIRouter(prefix="", tags=["关键字管理"])
 
@@ -57,6 +58,7 @@ class KeywordAdvancedListIn(BaseModel):
 
 # -------------------- 关键字路由 --------------------
 @router.get("/keywords/{cid}")
+@check_resource_access("cookie", "cid")
 def get_keywords(cid: str, current_user: Optional[Dict[str, Any]] = Depends(get_current_user)):
     """获取账号的关键字列表"""
     try:
@@ -67,6 +69,7 @@ def get_keywords(cid: str, current_user: Optional[Dict[str, Any]] = Depends(get_
 
 
 @router.get("/keywords-with-item-id/{cid}")
+@check_resource_access("cookie", "cid")
 def get_keywords_with_item_id(cid: str, current_user: Optional[Dict[str, Any]] = Depends(get_current_user)):
     """获取账号的关键字列表（包含商品ID）"""
     try:
@@ -77,6 +80,7 @@ def get_keywords_with_item_id(cid: str, current_user: Optional[Dict[str, Any]] =
 
 
 @router.get("/keywords-with-type/{cid}")
+@check_resource_access("cookie", "cid")
 def get_keywords_with_type(cid: str, current_user: Optional[Dict[str, Any]] = Depends(get_current_user)):
     """获取账号的关键字列表（包含类型和新字段）
     
@@ -101,6 +105,7 @@ def get_keywords_with_type(cid: str, current_user: Optional[Dict[str, Any]] = De
 
 
 @router.post("/keywords/{cid}")
+@check_resource_access("cookie", "cid")
 def save_keywords(cid: str, keywords: List[List[str]], current_user: Optional[Dict[str, Any]] = Depends(get_current_user)):
     """保存关键字列表"""
     try:
@@ -276,6 +281,7 @@ def test_keyword_match(
 
 
 @router.post("/keywords/cache-refresh/{cid}")
+@check_resource_access("cookie", "cid")
 def refresh_keyword_cache(cid: str, current_user: Optional[Dict[str, Any]] = Depends(get_current_user)):
     """刷新关键词匹配器缓存
     
@@ -335,6 +341,7 @@ def export_keywords(cid: str, current_user: Optional[Dict[str, Any]] = Depends(g
 
 
 @router.post("/keywords-import/{cid}")
+@check_resource_access("cookie", "cid")
 async def import_keywords(cid: str, file: UploadFile = File(...), current_user: Optional[Dict[str, Any]] = Depends(get_current_user)):
     """从Excel导入关键字（支持所有新字段）
     
@@ -413,6 +420,7 @@ def debug_keywords_table(current_user: Optional[Dict[str, Any]] = Depends(get_cu
 
 
 @router.get('/default-replies/{cid}')
+@check_resource_access("cookie", "cid")
 def get_default_reply(cid: str, current_user: Optional[Dict[str, Any]] = Depends(get_current_user)):
     """获取账号的默认回复设置"""
     try:
@@ -444,6 +452,7 @@ def get_all_default_replies(current_user: Optional[Dict[str, Any]] = Depends(get
 
 
 @router.delete('/default-replies/{cid}')
+@check_resource_access("cookie", "cid")
 def delete_default_reply(cid: str, current_user: Optional[Dict[str, Any]] = Depends(get_current_user)):
     """删除账号的默认回复设置"""
     try:

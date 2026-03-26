@@ -10,7 +10,10 @@ security = HTTPBearer(auto_error=False)
 
 
 def get_token_data(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> Optional[Dict[str, Any]]:
-    """获取 token 数据，不验证认证状态"""
+    """获取 token 数据，不验证认证状态
+    
+    检查 Token 是否在黑名单中，如果在黑名单中则返回 None
+    """
     from loguru import logger
     
     if not credentials:
@@ -21,6 +24,12 @@ def get_token_data(credentials: Optional[HTTPAuthorizationCredentials] = Depends
     logger.debug(f"收到 token: {token[:20]}...")
     
     from app.repositories import db_manager
+    
+    # 检查 Token 是否在黑名单中
+    if db_manager.is_token_blacklisted(token):
+        logger.warning(f"Token 已被列入黑名单: {token[:20]}...")
+        return None
+    
     session = db_manager.get_session(token)
     
     if session:

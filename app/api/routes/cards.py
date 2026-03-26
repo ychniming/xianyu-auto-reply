@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from typing import Optional, Dict, Any
 
 from app.api.dependencies import get_current_user
+from app.api.decorators import check_resource_access
 
 router = APIRouter(prefix="", tags=["卡券管理"])
 
@@ -158,6 +159,7 @@ async def update_card_image(card_id: int, file: UploadFile = File(...), current_
 
 
 @router.delete("/cards/{card_id}")
+@check_resource_access("card", "card_id")
 def delete_card(card_id: int, current_user: Optional[Dict[str, Any]] = Depends(get_current_user)):
     """删除卡券"""
     try:

@@ -17,6 +17,14 @@ from .xianyu_utils import (
     decrypt,
     get_js_path,
 )
+from .encryption import (
+    EncryptionError,
+    encrypt,
+    decrypt as aes_decrypt,
+    get_encryption_key,
+    get_encryption_key_cached,
+    clear_key_cache,
+)
 
 __all__ = [
     'qr_login_manager',
@@ -30,4 +38,11 @@ __all__ = [
     'generate_sign',
     'decrypt',
     'get_js_path',
+    # 加密工具
+    'EncryptionError',
+    'encrypt',
+    'aes_decrypt',
+    'get_encryption_key',
+    'get_encryption_key_cached',
+    'clear_key_cache',
 ]

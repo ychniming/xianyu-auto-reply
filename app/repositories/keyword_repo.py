@@ -167,6 +167,60 @@ class KeywordRepository:
 
         return True
 
+    def save_keywords_batch_with_transaction(self, keywords_data: List[Dict[str, Any]]) -> bool:
+        """批量保存多个账号的关键词（使用事务）
+
+        使用事务管理器确保批量操作的原子性，失败时自动回滚
+
+        Args:
+            keywords_data: 关键词数据列表，每个元素包含：
+                - cookie_id: 账号ID
+                - keywords: 关键词列表
+
+        Returns:
+            bool: 保存是否成功
+
+        Example:
+            keywords_data = [
+                {
+                    'cookie_id': 'account1',
+                    'keywords': [
+                        {'keyword': '你好', 'reply': '您好', 'match_type': 'contains'},
+                        {'keyword': '价格', 'reply': '优惠中', 'match_type': 'exact'}
+                    ]
+                },
+                {
+                    'cookie_id': 'account2',
+                    'keywords': [
+                        {'keyword': '在吗', 'reply': '在的', 'match_type': 'contains'}
+                    ]
+                }
+            ]
+        """
+        try:
+            # 使用事务管理器
+            with self._db.transaction:
+                for data in keywords_data:
+                    cookie_id = data.get('cookie_id')
+                    keywords = data.get('keywords', [])
+
+                    if not cookie_id:
+                        logger.warning("批量保存关键词时缺少cookie_id")
+                        continue
+
+                    # 调用单个账号的保存方法（已在事务中，不会单独提交）
+                    if not self.save_keywords_advanced(cookie_id, keywords):
+                        raise Exception(f"保存关键词失败: {cookie_id}")
+
+                    logger.debug(f"批量保存关键词: {cookie_id}, {len(keywords)}条")
+
+                logger.info(f"批量保存关键词成功，共处理 {len(keywords_data)} 个账号")
+                return True
+
+        except Exception as e:
+            logger.error(f"批量保存关键词失败，已回滚所有操作: {e}")
+            return False
+
     def save_text_keywords_only(self, cookie_id: str, keywords: List[Tuple[str, str, str]]) -> bool:
         """保存文本关键字列表，只删除文本类型的关键词，保留图片关键词（向后兼容方法）"""
         # 转换为新格式

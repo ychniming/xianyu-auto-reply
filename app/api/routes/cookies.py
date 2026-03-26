@@ -10,6 +10,7 @@ import re
 
 from app.api.dependencies import get_current_user, check_cookie_owner
 from app.api.response import success, created, updated, deleted
+from app.api.decorators import require_owner, check_resource_access
 
 router = APIRouter(prefix="", tags=["账号管理"])
 
@@ -134,6 +135,7 @@ def add_cookie(item: CookieIn, current_user: Optional[Dict[str, Any]] = Depends(
 
 
 @router.put('/cookies/{cid}')
+@check_resource_access("cookie", "cid")
 def update_cookie(cid: str, item: CookieIn, current_user: Optional[Dict[str, Any]] = Depends(get_current_user)):
     """更新Cookie"""
     from src import cookie_manager
@@ -142,11 +144,6 @@ def update_cookie(cid: str, item: CookieIn, current_user: Optional[Dict[str, Any
 
     try:
         user_id = current_user['user_id'] if current_user else None
-
-        if user_id is not None:
-            if not check_cookie_owner(cid, current_user):
-                raise HTTPException(status_code=403, detail="无权限操作该Cookie")
-
         from app.repositories import db_manager
 
         db_manager.save_cookie(cid, item.value, user_id)
@@ -159,17 +156,13 @@ def update_cookie(cid: str, item: CookieIn, current_user: Optional[Dict[str, Any
 
 
 @router.put('/cookies/{cid}/status')
+@check_resource_access("cookie", "cid")
 def update_cookie_status(cid: str, status: CookieStatusIn, current_user: Optional[Dict[str, Any]] = Depends(get_current_user)):
     """更新Cookie启用状态"""
     from src import cookie_manager
 
     try:
         user_id = current_user['user_id'] if current_user else None
-
-        if user_id is not None:
-            if not check_cookie_owner(cid, current_user):
-                raise HTTPException(status_code=403, detail="无权限操作该Cookie")
-
         from app.repositories import db_manager
         cookie_manager.manager.update_cookie_status(cid, status.enabled)
         db_manager.save_cookie_status(cid, status.enabled)
@@ -181,15 +174,11 @@ def update_cookie_status(cid: str, status: CookieStatusIn, current_user: Optiona
 
 
 @router.put("/cookies/{cid}/auto-confirm")
+@check_resource_access("cookie", "cid")
 def update_auto_confirm(cid: str, enabled: bool = True, current_user: Optional[Dict[str, Any]] = Depends(get_current_user)):
     """更新自动确认发货设置"""
     try:
         user_id = current_user['user_id'] if current_user else None
-
-        if user_id is not None:
-            if not check_cookie_owner(cid, current_user):
-                raise HTTPException(status_code=403, detail="无权限操作该Cookie")
-
         from app.repositories import db_manager
         db_manager.update_auto_confirm(cid, enabled)
         return updated(message="自动确认设置更新成功")
@@ -200,15 +189,11 @@ def update_auto_confirm(cid: str, enabled: bool = True, current_user: Optional[D
 
 
 @router.get("/cookies/{cid}/auto-confirm")
+@check_resource_access("cookie", "cid")
 def get_auto_confirm(cid: str, current_user: Optional[Dict[str, Any]] = Depends(get_current_user)):
     """获取自动确认发货设置"""
     try:
         user_id = current_user['user_id'] if current_user else None
-
-        if user_id is not None:
-            if not check_cookie_owner(cid, current_user):
-                raise HTTPException(status_code=403, detail="无权限操作该Cookie")
-
         from app.repositories import db_manager
         auto_confirm = db_manager.get_auto_confirm(cid)
         return success(data={'auto_confirm': auto_confirm})
@@ -219,17 +204,13 @@ def get_auto_confirm(cid: str, current_user: Optional[Dict[str, Any]] = Depends(
 
 
 @router.delete("/cookies/{cid}")
+@require_owner("cid")
 def delete_cookie(cid: str, current_user: Optional[Dict[str, Any]] = Depends(get_current_user)):
     """删除Cookie"""
     from src import cookie_manager
 
     try:
         user_id = current_user['user_id'] if current_user else None
-
-        if user_id is not None:
-            if not check_cookie_owner(cid, current_user):
-                raise HTTPException(status_code=403, detail="无权限操作该Cookie")
-
         from app.repositories import db_manager
         cookie_manager.manager.remove_cookie(cid)
         db_manager.delete_cookie(cid)

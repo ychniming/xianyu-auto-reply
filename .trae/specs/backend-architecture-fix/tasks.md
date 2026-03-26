@@ -11,66 +11,66 @@
 ## Phase 2: 安全性修复 (CRITICAL)
 
 ### 2.1 敏感数据加密
-- [ ] Task 2: 实现敏感数据加密工具
-  - [ ] SubTask 2.1: 创建 `app/utils/encryption.py` 加密工具模块
-  - [ ] SubTask 2.2: 实现 AES-256 加密/解密函数
-  - [ ] SubTask 2.3: 实现密钥管理（从环境变量读取）
+- [x] Task 2: 实现敏感数据加密工具
+  - [x] SubTask 2.1: 创建 `app/utils/encryption.py` 加密工具模块
+  - [x] SubTask 2.2: 实现 AES-256 加密/解密函数
+  - [x] SubTask 2.3: 实现密钥管理（从环境变量读取）
   - [ ] SubTask 2.4: 添加加密相关单元测试
 
-- [ ] Task 3: 加密存储 API Key
-  - [ ] SubTask 3.1: 修改 `ai_reply_settings` 表，添加 `api_key_encrypted` 字段
-  - [ ] SubTask 3.2: 修改 `db_manager.save_ai_reply_settings()` 加密存储
-  - [ ] SubTask 3.3: 修改 `db_manager.get_ai_reply_settings()` 解密读取
-  - [ ] SubTask 3.4: 修改 `AIReplyEngine.get_client()` 使用解密后的 Key
-  - [ ] SubTask 3.5: 数据迁移脚本：加密现有明文 API Key
+- [x] Task 3: 加密存储 API Key
+  - [x] SubTask 3.1: 修改 `ai_reply_settings` 表，添加 `api_key_encrypted` 字段
+  - [x] SubTask 3.2: 修改 `db_manager.save_ai_reply_settings()` 加密存储
+  - [x] SubTask 3.3: 修改 `db_manager.get_ai_reply_settings()` 解密读取
+  - [x] SubTask 3.4: 修改 `AIReplyEngine.get_client()` 使用解密后的 Key
+  - [x] SubTask 3.5: 数据迁移脚本：加密现有明文 API Key
 
-- [ ] Task 4: 加密存储 Cookie
-  - [ ] SubTask 4.1: 修改 `cookies` 表，添加 `value_encrypted` 字段
-  - [ ] SubTask 4.2: 修改 `CookieRepository` 加密存储
-  - [ ] SubTask 4.3: 修改 `CookieManager` 解密读取
-  - [ ] SubTask 4.4: 数据迁移脚本：加密现有明文 Cookie
+- [x] Task 4: 加密存储 Cookie
+  - [x] SubTask 4.1: 修改 `cookies` 表，添加 `value_encrypted` 字段
+  - [x] SubTask 4.2: 修改 `CookieRepository` 加密存储
+  - [x] SubTask 4.3: 修改 `CookieManager` 解密读取
+  - [x] SubTask 4.4: 数据迁移脚本：加密现有明文 Cookie
 
 ### 2.2 全局异常处理
-- [ ] Task 5: 实现自定义异常体系
-  - [ ] SubTask 5.1: 创建 `app/core/exceptions.py` 异常模块
-  - [ ] SubTask 5.2: 定义 `XianyuBaseException` 基类
-  - [ ] SubTask 5.3: 定义业务异常类（AuthenticationError, ResourceNotFoundError, PermissionDeniedError 等）
-  - [ ] SubTask 5.4: 定义错误码枚举
+- [x] Task 5: 实现自定义异常体系
+  - [x] SubTask 5.1: 创建 `app/core/exceptions.py` 异常模块
+  - [x] SubTask 5.2: 定义 `XianyuBaseException` 基类
+  - [x] SubTask 5.3: 定义业务异常类（AuthenticationError, ResourceNotFoundError, PermissionDeniedError 等）
+  - [x] SubTask 5.4: 定义错误码枚举
 
-- [ ] Task 6: 实现全局异常处理器
-  - [ ] SubTask 6.1: 创建 `app/api/exception_handlers.py`
-  - [ ] SubTask 6.2: 实现业务异常处理器
-  - [ ] SubTask 6.3: 实现 Pydantic 验证异常处理器
-  - [ ] SubTask 6.4: 实现通用异常处理器（过滤敏感信息）
+- [x] Task 6: 实现全局异常处理器
+  - [x] SubTask 6.1: 创建 `app/api/exception_handlers.py`
+  - [x] SubTask 6.2: 实现业务异常处理器
+  - [x] SubTask 6.3: 实现 Pydantic 验证异常处理器
+  - [x] SubTask 6.4: 实现通用异常处理器（过滤敏感信息）
   - [ ] SubTask 6.5: 在 FastAPI 应用中注册异常处理器
 
 ### 2.3 权限检查完善
-- [ ] Task 7: 实现权限装饰器
-  - [ ] SubTask 7.1: 创建 `app/api/decorators.py` 权限装饰器模块
-  - [ ] SubTask 7.2: 实现 `@require_owner` 装饰器
-  - [ ] SubTask 7.3: 实现 `@require_admin` 装饰器
-  - [ ] SubTask 7.4: 实现 `@check_resource_access` 装饰器
+- [x] Task 7: 实现权限装饰器
+  - [x] SubTask 7.1: 创建 `app/api/decorators.py` 权限装饰器模块
+  - [x] SubTask 7.2: 实现 `@require_owner` 装饰器
+  - [x] SubTask 7.3: 实现 `@require_admin` 装饰器
+  - [x] SubTask 7.4: 实现 `@check_resource_access` 装饰器
 
-- [ ] Task 8: 应用权限检查到路由
-  - [ ] SubTask 8.1: 审查 `routes/cookies.py` 添加权限检查
-  - [ ] SubTask 8.2: 审查 `routes/keywords.py` 添加权限检查
-  - [ ] SubTask 8.3: 审查 `routes/cards.py` 添加权限检查
-  - [ ] SubTask 8.4: 审查 `routes/items.py` 添加权限检查
+- [x] Task 8: 应用权限检查到路由
+  - [x] SubTask 8.1: 审查 `routes/cookies.py` 添加权限检查
+  - [x] SubTask 8.2: 审查 `routes/keywords.py` 添加权限检查
+  - [x] SubTask 8.3: 审查 `routes/cards.py` 添加权限检查
+  - [x] SubTask 8.4: 审查 `routes/items.py` 添加权限检查
 
 ### 2.4 Session 黑名单
-- [ ] Task 9: 实现 Session 黑名单
-  - [ ] SubTask 9.1: 创建 `token_blacklist` 表
-  - [ ] SubTask 9.2: 修改 `logout()` 添加 Token 到黑名单
-  - [ ] SubTask 9.3: 修改 `get_token_data()` 检查黑名单
-  - [ ] SubTask 9.4: 实现黑名单定期清理
+- [x] Task 9: 实现 Session 黑名单
+  - [x] SubTask 9.1: 创建 `token_blacklist` 表
+  - [x] SubTask 9.2: 修改 `logout()` 添加 Token 到黑名单
+  - [x] SubTask 9.3: 修改 `get_token_data()` 检查黑名单
+  - [x] SubTask 9.4: 实现黑名单定期清理
 
 ## Phase 3: 代码质量改进 (HIGH)
 
 ### 3.1 依赖注入重构
-- [ ] Task 10: 创建依赖注入容器
-  - [ ] SubTask 10.1: 创建 `app/core/container.py` 依赖注入容器
-  - [ ] SubTask 10.2: 定义服务接口
-  - [ ] SubTask 10.3: 实现服务工厂函数
+- [x] Task 10: 创建依赖注入容器
+  - [x] SubTask 10.1: 创建 `app/core/container.py` 依赖注入容器
+  - [x] SubTask 10.2: 定义服务接口
+  - [x] SubTask 10.3: 实现服务工厂函数
 
 - [ ] Task 11: 重构数据库管理器
   - [ ] SubTask 11.1: 移除 `db_manager` 全局实例
@@ -94,10 +94,10 @@
   - [ ] SubTask 14.3: 移除 `from src import cookie_manager` 运行时导入
 
 ### 3.3 RESTful API 规范
-- [ ] Task 15: 修复路由 HTTP 方法
-  - [ ] SubTask 15.1: 修改 `routes/items.py` 搜索接口为 GET
-  - [ ] SubTask 15.2: 修改 `routes/items.py` 多页搜索为 GET
-  - [ ] SubTask 15.3: 审查其他路由，确保 HTTP 方法正确
+- [x] Task 15: 修复路由 HTTP 方法
+  - [x] SubTask 15.1: 修改 `routes/items.py` 搜索接口为 GET
+  - [x] SubTask 15.2: 修改 `routes/items.py` 多页搜索为 GET
+  - [x] SubTask 15.3: 审查其他路由，确保 HTTP 方法正确
 
 - [ ] Task 16: 统一路由前缀
   - [ ] SubTask 16.1: 为所有路由添加 `/api/v1` 前缀
@@ -109,15 +109,15 @@
   - [ ] SubTask 17.2: 审查所有路由，确保状态码正确
 
 ### 3.4 事务管理
-- [ ] Task 18: 实现事务管理器
-  - [ ] SubTask 18.1: 创建 `app/repositories/transaction.py` 事务管理模块
-  - [ ] SubTask 18.2: 实现上下文管理器 `with_transaction()`
-  - [ ] SubTask 18.3: 实现事务装饰器 `@transactional`
+- [x] Task 18: 实现事务管理器
+  - [x] SubTask 18.1: 创建 `app/repositories/transaction.py` 事务管理模块
+  - [x] SubTask 18.2: 实现上下文管理器 `with_transaction()`
+  - [x] SubTask 18.3: 实现事务装饰器 `@transactional`
 
-- [ ] Task 19: 应用事务到关键操作
-  - [ ] SubTask 19.1: 修改 `import_backup()` 使用事务
-  - [ ] SubTask 19.2: 修改批量操作使用事务
-  - [ ] SubTask 19.3: 修改关联数据更新使用事务
+- [x] Task 19: 应用事务到关键操作
+  - [x] SubTask 19.1: 修改 `import_backup()` 使用事务
+  - [x] SubTask 19.2: 修改批量操作使用事务
+  - [x] SubTask 19.3: 修改关联数据更新使用事务
 
 ### 3.5 类型注解完善
 - [ ] Task 20: 添加类型注解
@@ -129,14 +129,14 @@
 ## Phase 4: 性能优化 (MEDIUM)
 
 ### 4.1 N+1 查询修复
-- [ ] Task 21: 实现批量查询方法
-  - [ ] SubTask 21.1: 在 `ItemRepository` 添加 `get_items_by_cookie_ids()` 方法
-  - [ ] SubTask 21.2: 修改 `routes/items.py` 使用批量查询
+- [x] Task 21: 实现批量查询方法
+  - [x] SubTask 21.1: 在 `ItemRepository` 添加 `get_items_by_cookie_ids()` 方法
+  - [x] SubTask 21.2: 修改 `routes/items.py` 使用批量查询
 
 ### 4.2 缓存优化
-- [ ] Task 22: 修复 AI 客户端缓存
-  - [ ] SubTask 22.1: 为 `AIReplyEngine.clients` 添加 LRU 缓存限制
-  - [ ] SubTask 22.2: 实现定期清理过期客户端
+- [x] Task 22: 修复 AI 客户端缓存
+  - [x] SubTask 22.1: 为 `AIReplyEngine.clients` 添加 LRU 缓存限制
+  - [x] SubTask 22.2: 实现定期清理过期客户端
 
 - [ ] Task 23: 实现规则引擎缓存
   - [ ] SubTask 23.1: 实现 `RuleEngine._rule_cache` 缓存逻辑

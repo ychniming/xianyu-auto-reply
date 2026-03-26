@@ -28,6 +28,20 @@ from app.core.rule_engine import (
     KeywordConditionHandler,
 )
 
+# 导出异常类
+from app.core.exceptions import (
+    ErrorCode,
+    XianyuBaseException,
+    AuthenticationError,
+    PermissionDeniedError,
+    ResourceNotFoundError,
+    ValidationError,
+    ConflictError,
+    RateLimitError,
+    DatabaseError,
+    ExternalServiceError,
+)
+
 __all__ = [
     'CookieManager',
     'XianyuLive',
@@ -47,4 +61,15 @@ __all__ = [
     'UserConditionHandler',
     'ItemConditionHandler',
     'KeywordConditionHandler',
+    # 异常类
+    'ErrorCode',
+    'XianyuBaseException',
+    'AuthenticationError',
+    'PermissionDeniedError',
+    'ResourceNotFoundError',
+    'ValidationError',
+    'ConflictError',
+    'RateLimitError',
+    'DatabaseError',
+    'ExternalServiceError',
 ]

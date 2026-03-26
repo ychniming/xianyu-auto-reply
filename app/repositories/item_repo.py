@@ -175,6 +175,54 @@ class ItemRepository:
                 logger.error(f"获取商品多规格状态失败: {e}")
                 return False
 
+    def get_items_by_cookie_ids(self, cookie_ids: List[str]) -> List[Dict[str, Any]]:
+        """批量获取多个账号的商品信息
+
+        Args:
+            cookie_ids: 账号ID列表
+
+        Returns:
+            List[Dict[str, Any]]: 所有账号的商品信息列表
+        """
+        if not cookie_ids:
+            return []
+
+        with self.lock:
+            try:
+                import time
+                start_time = time.time()
+
+                cursor = self.conn.cursor()
+                placeholders = ','.join(['?' for _ in cookie_ids])
+                cursor.execute(f'''
+                SELECT * FROM item_info
+                WHERE cookie_id IN ({placeholders})
+                ORDER BY updated_at DESC
+                ''', cookie_ids)
+
+                query_time = time.time() - start_time
+                logger.info(f"批量查询商品耗时: {query_time:.3f}秒, 查询账号数: {len(cookie_ids)}")
+
+                columns = [description[0] for description in cursor.description]
+                items = []
+
+                for row in cursor.fetchall():
+                    item_info = dict(zip(columns, row))
+
+                    if item_info.get('item_detail'):
+                        try:
+                            item_info['item_detail_parsed'] = json.loads(item_info['item_detail'])
+                        except (json.JSONDecodeError, TypeError):
+                            item_info['item_detail_parsed'] = {}
+
+                    items.append(item_info)
+
+                logger.info(f"批量查询返回商品数: {len(items)}")
+                return items
+            except Exception as e:
+                logger.error(f"批量获取商品信息失败: {e}")
+                return []
+
     def get_items_by_cookie(self, cookie_id: str) -> List[Dict[str, Any]]:
         """获取指定Cookie的所有商品信息
 
