@@ -1,10 +1,11 @@
 // 认证模块 - 认证相关函数和 Token 管理
 import { authToken, updateAuthToken } from './utils.js';
+import { showToast } from './api.js';
 
 // 检查认证状态
 export async function checkAuth() {
     if (!authToken.value) {
-        window.location.href = '/';
+        window.location.href = '/login.html';
         return false;
     }
 
@@ -13,9 +14,7 @@ export async function checkAuth() {
         const data = await window.API.auth.verify();
 
         if (!data || !data.authenticated) {
-            localStorage.removeItem('auth_token');
-            updateAuthToken(null);
-            window.location.href = '/';
+            console.warn('Token 验证失败但保留 token，等待后续处理');
             return false;
         }
 
@@ -35,9 +34,7 @@ export async function checkAuth() {
 
         return true;
     } catch (err) {
-        localStorage.removeItem('auth_token');
-        updateAuthToken(null);
-        window.location.href = '/';
+        console.error('验证请求失败:', err);
         return false;
     }
 }
@@ -50,12 +47,12 @@ export async function logout() {
         }
         localStorage.removeItem('auth_token');
         updateAuthToken(null);
-        window.location.href = '/';
+        window.location.href = '/login.html';
     } catch (err) {
         console.error('登出失败:', err);
         localStorage.removeItem('auth_token');
         updateAuthToken(null);
-        window.location.href = '/';
+        window.location.href = '/login.html';
     }
 }
 
@@ -116,19 +113,14 @@ export async function generateQRCode() {
     try {
         showQRCodeLoading();
 
-        const response = await window.API.qrLogin.generate();
+        const data = await window.API.qrLogin.generate();
 
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success) {
-                qrCodeSessionId = data.session_id;
-                showQRCodeImage(data.qr_code_url);
-                startQRCodeCheck();
-            } else {
-                showQRCodeError(data.message || '生成二维码失败');
-            }
+        if (data && data.success) {
+            qrCodeSessionId = data.session_id;
+            showQRCodeImage(data.qr_code_url);
+            startQRCodeCheck();
         } else {
-            showQRCodeError('生成二维码失败');
+            showQRCodeError(data?.message || '生成二维码失败');
         }
     } catch (error) {
         console.error('生成二维码失败:', error);
@@ -199,11 +191,9 @@ export async function checkQRCodeStatus() {
     }
 
     try {
-        const response = await window.API.qrLogin.checkStatus(qrCodeSessionId);
+        const data = await window.API.qrLogin.checkStatus(qrCodeSessionId);
 
-        if (response.ok) {
-            const data = await response.json();
-
+        if (data) {
             switch (data.status) {
                 case 'waiting':
                     document.getElementById('statusText').textContent = '等待扫码...';
@@ -235,7 +225,7 @@ export async function checkQRCodeStatus() {
                     break;
             }
         } else {
-            console.warn(`检查状态请求失败: HTTP ${response.status}`);
+            console.warn('检查状态返回空数据');
         }
     } catch (error) {
         console.error('检查二维码状态失败:', error);
@@ -311,9 +301,8 @@ export function showVerificationRequired(data) {
     verificationContainer.innerHTML = verificationHtml;
     verificationContainer.style.display = 'block';
 
-        // 显示Toast提示
-        window.App.showToast('账号需要手机验证，请按照提示完成验证', 'warning');
-    }
+    // 显示Toast提示
+    showToast('账号需要手机验证，请按照提示完成验证', 'warning');
 }
 
 // 验证完成后继续登录
@@ -331,7 +320,7 @@ export function continueAfterVerification() {
     // 继续轮询检查状态
     startQRCodeCheck();
 
-    window.App.showToast('正在检查登录状态...', 'info');
+    showToast('正在检查登录状态...', 'info');
 }
 
 // 处理扫码成功
@@ -340,9 +329,9 @@ export function handleQRCodeSuccess(data) {
         const { account_id, is_new_account } = data.account_info;
 
         if (is_new_account) {
-            window.App.showToast(`新账号添加成功！账号ID: ${account_id}`, 'success');
+            showToast(`新账号添加成功！账号ID: ${account_id}`, 'success');
         } else {
-            window.App.showToast(`账号Cookie已更新！账号ID: ${account_id}`, 'success');
+            showToast(`账号Cookie已更新！账号ID: ${account_id}`, 'success');
         }
 
         // 关闭模态框

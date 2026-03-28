@@ -1,5 +1,6 @@
 // 关键词管理模块 - 关键词管理相关函数
 import { apiBase, authToken, keywordsStore, cookiesStore, clearKeywordCache, escapeHtml, loadItemsList } from './utils.js';
+import { toggleLoading } from './api.js';
 
 // 获取账号关键词数量（带缓存）
 export async function getAccountKeywordCount(accountId) {
@@ -903,7 +904,7 @@ export async function deleteKeyword(cookieId, index) {
         const response = await fetch(`${apiBase}/keywords/${cookieId}/${index}`, {
             method: 'DELETE',
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${authToken.value}`
             }
         });
 
@@ -1118,7 +1119,7 @@ export async function addImageKeyword() {
         const response = await fetch(`${apiBase}/keywords/${currentCookieId}/image`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${authToken.value}`
             },
             body: formData
         });
@@ -1215,7 +1216,7 @@ export async function exportKeywords() {
 
         const response = await fetch(`${apiBase}/keywords-export/${currentCookieId}`, {
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${authToken.value}`
             }
         });
 
@@ -1297,7 +1298,7 @@ export async function importKeywords() {
         const response = await fetch(`${apiBase}/keywords-import/${currentCookieId}`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${authToken.value}`
             },
             body: formData
         });
@@ -1358,7 +1359,7 @@ export async function testKeywordMatch() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${authToken.value}`
             },
             body: JSON.stringify({
                 message: message,

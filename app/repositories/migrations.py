@@ -433,6 +433,13 @@ class DatabaseUpgrader:
                     cursor.execute("UPDATE delivery_rules SET user_id = ? WHERE user_id IS NULL", (admin_user_id,))
 
                 try:
+                    cursor.execute("SELECT spec_name FROM delivery_rules LIMIT 1")
+                except sqlite3.OperationalError:
+                    cursor.execute("ALTER TABLE delivery_rules ADD COLUMN spec_name TEXT")
+                    cursor.execute("ALTER TABLE delivery_rules ADD COLUMN spec_value TEXT")
+                    logger.info("delivery_rules表添加spec_name和spec_value字段完成")
+
+                try:
                     cursor.execute("SELECT user_id FROM notification_channels LIMIT 1")
                 except sqlite3.OperationalError:
                     cursor.execute("ALTER TABLE notification_channels ADD COLUMN user_id INTEGER")

@@ -172,7 +172,7 @@ class TokenManager:
         """Token 刷新循环"""
         while True:
             try:
-                from src import cookie_manager as cm
+                from app.core import cookie_manager as cm
                 if cm.manager and not cm.manager.get_cookie_status(self.parent.cookie_id):
                     logger.info(f"【{self.parent.cookie_id}】账号已禁用，停止 Token 刷新循环")
                     break

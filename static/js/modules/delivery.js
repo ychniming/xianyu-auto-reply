@@ -8,7 +8,7 @@ export async function loadDeliveryRules() {
     try {
         const response = await fetch(`${apiBase}/delivery-rules`, {
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${authToken.value}`
             }
         });
 
@@ -140,7 +140,7 @@ export async function loadCardsForSelect() {
     try {
         const response = await fetch(`${apiBase}/cards`, {
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${authToken.value}`
             }
         });
 
@@ -219,7 +219,7 @@ export async function saveDeliveryRule() {
         const response = await fetch(`${apiBase}/delivery-rules`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${authToken}`,
+                'Authorization': `Bearer ${authToken.value}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(ruleData)
@@ -245,7 +245,7 @@ export async function editDeliveryRule(ruleId) {
         // 获取发货规则详情
         const response = await fetch(`${apiBase}/delivery-rules/${ruleId}`, {
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${authToken.value}`
             }
         });
 
@@ -280,7 +280,7 @@ export async function loadCardsForEditSelect() {
     try {
         const response = await fetch(`${apiBase}/cards`, {
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${authToken.value}`
             }
         });
 
@@ -360,7 +360,7 @@ export async function updateDeliveryRule() {
         const response = await fetch(`${apiBase}/delivery-rules/${ruleId}`, {
             method: 'PUT',
             headers: {
-                'Authorization': `Bearer ${authToken}`,
+                'Authorization': `Bearer ${authToken.value}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(ruleData)
@@ -392,7 +392,7 @@ export async function deleteDeliveryRule(ruleId) {
             const response = await fetch(`${apiBase}/delivery-rules/${ruleId}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${authToken}`
+                    'Authorization': `Bearer ${authToken.value}`
                 }
             });
 

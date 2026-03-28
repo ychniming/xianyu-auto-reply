@@ -490,7 +490,7 @@ class XianyuLive:
         """Token刷新循环"""
         while True:
             try:
-                from src import cookie_manager as cm
+                from app.core import cookie_manager as cm
                 if cm.manager and not cm.manager.get_cookie_status(self.cookie_id):
                     logger.info(f"【{self.cookie_id}】账号已禁用，停止Token刷新循环")
                     break
@@ -706,7 +706,7 @@ class XianyuLive:
         """心跳循环"""
         while True:
             try:
-                from src import cookie_manager as cm
+                from app.core import cookie_manager as cm
                 if cm.manager and not cm.manager.get_cookie_status(self.cookie_id):
                     logger.info(f"【{self.cookie_id}】账号已禁用，停止心跳循环")
                     break
@@ -826,7 +826,7 @@ class XianyuLive:
 
     def _is_account_disabled(self) -> bool:
         """检查账号是否已禁用"""
-        from src import cookie_manager as cm
+        from app.core import cookie_manager as cm
         if cm.manager and not cm.manager.get_cookie_status(self.cookie_id):
             logger.info(f"【{self.cookie_id}】账号已禁用，停止主循环")
             return True

@@ -19,30 +19,41 @@ class BaseDB:
         # 支持环境变量配置数据库路径
         if db_path is None:
             db_path = os.getenv('DB_PATH', 'xianyu_data.db')
+        
+        # 如果是相对路径，转换为项目根目录的绝对路径
+        if not os.path.isabs(db_path):
+            # 获取项目根目录（base.py 的父目录的父目录）
+            project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            # 如果路径中已经包含 data 目录，直接使用项目根目录
+            if os.path.basename(os.path.dirname(db_path)) == 'data':
+                db_path = os.path.join(project_root, db_path)
+            else:
+                db_path = os.path.join(project_root, 'data', db_path)
+            logger.info(f"使用项目数据目录：{os.path.dirname(db_path)}")
 
         # 确保数据目录存在并有正确权限
         db_dir = os.path.dirname(db_path)
         if db_dir and not os.path.exists(db_dir):
             try:
                 os.makedirs(db_dir, mode=0o755, exist_ok=True)
-                logger.info(f"创建数据目录: {db_dir}")
+                logger.info(f"创建数据目录：{db_dir}")
             except PermissionError as e:
-                logger.error(f"创建数据目录失败，权限不足: {e}")
+                logger.error(f"创建数据目录失败，权限不足：{e}")
                 db_path = os.path.basename(db_path)
-                logger.warning(f"使用当前目录作为数据库路径: {db_path}")
+                logger.warning(f"使用当前目录作为数据库路径：{db_path}")
             except Exception as e:
-                logger.error(f"创建数据目录失败: {e}")
+                logger.error(f"创建数据目录失败：{e}")
                 raise
 
         # 检查目录权限
         if db_dir and os.path.exists(db_dir):
             if not os.access(db_dir, os.W_OK):
-                logger.error(f"数据目录没有写权限: {db_dir}")
+                logger.error(f"数据目录没有写权限：{db_dir}")
                 db_path = os.path.basename(db_path)
-                logger.warning(f"使用当前目录作为数据库路径: {db_path}")
+                logger.warning(f"使用当前目录作为数据库路径：{db_path}")
 
         self.db_path = db_path
-        logger.info(f"数据库路径: {self.db_path}")
+        logger.info(f"数据库路径：{self.db_path}")
         self.conn: Optional[sqlite3.Connection] = None
         self.lock = threading.RLock()
 

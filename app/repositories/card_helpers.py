@@ -79,7 +79,9 @@ def _build_rule_from_row(row: Tuple) -> Dict[str, Any]:
         'delivery_times': row[6],
         'user_id': row[7],
         'card_name': row[8],
-        'card_type': row[9]
+        'card_type': row[9],
+        'spec_name': row[10] if len(row) > 10 else None,
+        'spec_value': row[11] if len(row) > 11 else None
     }
 
 
@@ -142,5 +144,7 @@ def _build_rule_with_spec_name_from_row(row: Tuple) -> Dict[str, Any]:
         'delivery_times': row[6],
         'user_id': row[7],
         'card_name': row[8],
-        'card_type': row[9]
+        'card_type': row[9],
+        'spec_name': row[10] if len(row) > 10 else None,
+        'spec_value': row[11] if len(row) > 11 else None
     }

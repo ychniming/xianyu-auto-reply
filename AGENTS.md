@@ -1,7 +1,7 @@
 ---
 title: 智能体入口
 description: AI 助手快速理解项目的入口文档，提供核心知识地图
-lastUpdated: 2026-03-25
+lastUpdated: 2026-03-26
 maintainer: Doc Keeper Agent
 maxLines: 100
 ---
@@ -69,11 +69,44 @@ python scripts/Start.py
 # Docker 部署
 cd deploy && docker-compose up -d
 
-# 运行测试
-pytest tests/
+# 运行测试（所有）
+pytest tests/ -n auto
+
+# 运行单元测试
+pytest tests/unit/ -v
+
+# 运行集成测试
+pytest tests/integration/ -v
+
+# 运行带报告的测试
+pytest tests/ --html=reports/report.html --self-contained-html
+
+# 生成Allure报告
+allure serve reports/allure-results
 
 # 查看日志
 tail -f logs/xianyu_$(date +%Y-%m-%d).log
+```
+
+## 测试框架
+
+| 类型 | 工具 | 说明 |
+|------|------|------|
+| 单元测试 | `pytest` + `pytest-xdist` | 并行执行 |
+| API测试 | `FastAPI TestClient` | 集成测试 |
+| E2E测试 | `Playwright` | 浏览器自动化 |
+| 报告 | `Allure` + `pytest-html` | 可视化报告 |
+
+## 测试目录
+
+```
+tests/
+├── conftest.py           # pytest配置和fixtures
+├── unit/                 # 单元测试
+├── integration/           # 集成测试
+├── performance/           # 性能测试
+├── e2e/                  # 端到端测试
+└── ai/                   # AI辅助测试
 ```
 
 ## 重要提醒
@@ -82,6 +115,7 @@ tail -f logs/xianyu_$(date +%Y-%m-%d).log
 - WebSocket 断开后自动重连
 - AI 回复需要配置 OpenAI API Key
 - 数据库文件：`data/xianyu_data.db`
+- 测试覆盖率目标：≥80%
 
 ---
 

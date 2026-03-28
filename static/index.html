@@ -1387,16 +1387,135 @@
 
 
 
+  <!-- 添加卡券模态框 -->
+  <div class="modal fade" id="addCardModal" tabindex="-1" aria-labelledby="addCardModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addCardModalLabel">
+            <i class="bi bi-plus-circle me-2"></i>
+            添加卡券
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="addCardForm">
+            <div class="mb-3">
+              <label class="form-label">卡券名称 <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="cardName" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">卡券类型 <span class="text-danger">*</span></label>
+              <select class="form-select" id="cardType" onchange="toggleCardTypeFields()" required>
+                <option value="text">固定文字</option>
+                <option value="api">API 接口</option>
+                <option value="data">批量数据</option>
+                <option value="image">图片</option>
+              </select>
+            </div>
+            <div class="mb-3" id="textFields">
+              <label class="form-label">卡券内容 <span class="text-danger">*</span></label>
+              <textarea class="form-control" id="cardContent" rows="3"></textarea>
+              <small class="form-text text-muted">支持变量：[卡密] [用户名] [密码] [QQ] 等</small>
+            </div>
+            <div class="mb-3" id="apiFields" style="display: none;">
+              <label class="form-label">API 地址 <span class="text-danger">*</span></label>
+              <input type="url" class="form-control" id="apiUrl" placeholder="https://api.example.com/getcard">
+              <small class="form-text text-muted">请求方式：POST，参数：type=card</small>
+            </div>
+            <div class="mb-3" id="dataFields" style="display: none;">
+              <label class="form-label">批量数据 <span class="text-danger">*</span></label>
+              <textarea class="form-control" id="batchData" rows="5" placeholder="每行一个卡密，格式：卡密|用户名|密码"></textarea>
+            </div>
+            <div class="mb-3" id="imageFields" style="display: none;">
+              <label class="form-label">上传图片 <span class="text-danger">*</span></label>
+              <input type="file" class="form-control" id="cardImageFile" accept="image/*">
+              <small class="form-text text-muted">支持 JPG、PNG 格式，最大 5MB</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">延时时间（秒）</label>
+              <input type="number" class="form-control" id="delayTime" value="0" min="0" max="300">
+              <small class="form-text text-muted">发货后延迟多少秒发送卡券，0 表示立即发送</small>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-primary" onclick="saveCard()">保存卡券</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 编辑卡券模态框 -->
+  <div class="modal fade" id="editCardModal" tabindex="-1" aria-labelledby="editCardModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editCardModalLabel">
+            <i class="bi bi-pencil me-2"></i>
+            编辑卡券
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="editCardForm">
+            <input type="hidden" id="editCardId">
+            <div class="mb-3">
+              <label class="form-label">卡券名称 <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="editCardName" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">卡券类型 <span class="text-danger">*</span></label>
+              <select class="form-select" id="editCardType" onchange="toggleCardTypeFields()" required>
+                <option value="text">固定文字</option>
+                <option value="api">API 接口</option>
+                <option value="data">批量数据</option>
+                <option value="image">图片</option>
+              </select>
+            </div>
+            <div class="mb-3" id="editTextFields">
+              <label class="form-label">卡券内容 <span class="text-danger">*</span></label>
+              <textarea class="form-control" id="editCardContent" rows="3"></textarea>
+            </div>
+            <div class="mb-3" id="editApiFields" style="display: none;">
+              <label class="form-label">API 地址 <span class="text-danger">*</span></label>
+              <input type="url" class="form-control" id="editApiUrl">
+            </div>
+            <div class="mb-3" id="editDataFields" style="display: none;">
+              <label class="form-label">批量数据 <span class="text-danger">*</span></label>
+              <textarea class="form-control" id="editBatchData" rows="5"></textarea>
+            </div>
+            <div class="mb-3" id="editImageFields" style="display: none;">
+              <label class="form-label">更换图片</label>
+              <input type="file" class="form-control" id="editCardImageFile" accept="image/*">
+              <small class="form-text text-muted">不选择则保持原图</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">延时时间（秒）</label>
+              <input type="number" class="form-control" id="editDelayTime" min="0" max="300">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-primary" onclick="updateCard()">更新卡券</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
   <!-- 添加发货规则模态框 -->
-  <div class="modal fade" id="addDeliveryRuleModal" tabindex="-1">
+  <div class="modal fade" id="addDeliveryRuleModal" tabindex="-1" aria-labelledby="addDeliveryRuleModalLabel" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">
+          <h5 class="modal-title" id="addDeliveryRuleModalLabel">
             <i class="bi bi-truck me-2"></i>
             添加发货规则
           </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <form id="addDeliveryRuleForm">
@@ -1439,15 +1558,15 @@
   </div>
 
   <!-- 编辑发货规则模态框 -->
-  <div class="modal fade" id="editDeliveryRuleModal" tabindex="-1">
+  <div class="modal fade" id="editDeliveryRuleModal" tabindex="-1" aria-labelledby="editDeliveryRuleModalLabel" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">
+          <h5 class="modal-title" id="editDeliveryRuleModalLabel">
             <i class="bi bi-pencil me-2"></i>
             编辑发货规则
           </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <form id="editDeliveryRuleForm">
@@ -1502,7 +1621,7 @@
 
   <!-- JS 依赖 -->
   <script src="/static/lib/bootstrap/bootstrap.bundle.min.js"></script>
-  <script type="module" src="/static/js/app.js?v=20260325001"></script>
+  <script type="module" src="/static/js/app.js?v=20260326001"></script>
 
   <!-- 默认回复管理模态框 -->
   <div class="modal fade" id="defaultReplyManagerModal" tabindex="-1" aria-labelledby="defaultReplyModalLabel" aria-hidden="true">

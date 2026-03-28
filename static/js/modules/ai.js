@@ -106,17 +106,12 @@ export async function testAIReply() {
     testButton.disabled = true;
 
     try {
-        const response = await window.API.ai.test(testMessage, config);
+        const data = await window.API.ai.test(testMessage, config);
 
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success) {
-                testOutput.value = data.reply || '收到空回复';
-            } else {
-                testOutput.value = `测试失败: ${data.message || '未知错误'}`;
-            }
+        if (data && data.success) {
+            testOutput.value = data.reply || '收到空回复';
         } else {
-            testOutput.value = `请求失败: HTTP ${response.status}`;
+            testOutput.value = `测试失败: ${data?.message || '未知错误'}`;
         }
     } catch (error) {
         console.error('AI测试失败:', error);
@@ -154,31 +149,26 @@ export async function saveAIReplyConfig() {
     };
 
     try {
-        const response = await window.API.ai.saveConfig(config);
+        const data = await window.API.ai.saveConfig(config);
 
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success) {
-                aiStore.setState({
-                    enabled,
-                    model,
-                    apiKey,
-                    customPrompt,
-                    temperature,
-                    maxTokens,
-                    intentClassification,
-                    autoDelivery
-                });
+        if (data && data.success) {
+            aiStore.setState({
+                enabled,
+                model,
+                apiKey,
+                customPrompt,
+                temperature,
+                maxTokens,
+                intentClassification,
+                autoDelivery
+            });
 
-                localStorage.setItem('ai_settings', JSON.stringify(config));
+            localStorage.setItem('ai_settings', JSON.stringify(config));
 
-                showToast('AI回复配置已保存', 'success');
-                return true;
-            } else {
-                showToast(data.message || '保存失败', 'danger');
-            }
+            showToast('AI回复配置已保存', 'success');
+            return true;
         } else {
-            showToast(`保存失败: HTTP ${response.status}`, 'danger');
+            showToast(data?.message || '保存失败', 'danger');
         }
     } catch (error) {
         console.error('保存AI配置失败:', error);
@@ -207,7 +197,7 @@ export async function openDefaultReplyManager() {
     try {
         const response = await fetch(`${apiBase}/default-replies`, {
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${authToken.value}`
             }
         });
 
@@ -275,7 +265,7 @@ export async function editDefaultReply(cookieId) {
     try {
         const response = await fetch(`${apiBase}/default-replies/${cookieId}`, {
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${authToken.value}`
             }
         });
 
@@ -317,7 +307,7 @@ export async function saveDefaultReply() {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${authToken.value}`
             },
             body: JSON.stringify({ enabled, reply_content: content })
         });
@@ -341,13 +331,10 @@ export async function saveDefaultReply() {
 // 获取所有默认回复
 export async function getDefaultReplies() {
     try {
-        const response = await window.API.defaultReplies.list();
+        const data = await window.API.defaultReplies.list();
 
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success) {
-                return data.replies || {};
-            }
+        if (data && data.success) {
+            return data.replies || {};
         }
     } catch (error) {
         console.error('获取默认回复失败:', error);
@@ -359,14 +346,10 @@ export async function getDefaultReplies() {
 // 获取单个默认回复
 export async function getDefaultReply(type) {
     try {
-        const response = await getDefaultRepliesAPI();
+        const replies = await getDefaultReplies();
 
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success) {
-                const replies = data.replies || {};
-                return replies[type] || '';
-            }
+        if (replies && typeof replies === 'object') {
+            return replies[type] || '';
         }
     } catch (error) {
         console.error('获取默认回复失败:', error);
@@ -378,16 +361,13 @@ export async function getDefaultReply(type) {
 // 更新单个默认回复
 export async function updateDefaultReply(type, content) {
     try {
-        const response = await window.API.defaultReplies.update(type, content);
+        const data = await window.API.defaultReplies.update(type, content);
 
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success) {
-                showToast(`${type}默认回复已更新`, 'success');
-                return true;
-            } else {
-                showToast(data.message || '更新失败', 'danger');
-            }
+        if (data && data.success) {
+            showToast(`${type}默认回复已更新`, 'success');
+            return true;
+        } else {
+            showToast(data?.message || '更新失败', 'danger');
         }
     } catch (error) {
         console.error('更新默认回复失败:', error);

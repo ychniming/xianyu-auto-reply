@@ -154,7 +154,7 @@ async function fetchJSON(url, opts = {}) {
         const res = await fetchWithRetry(url, opts);
         if (res.status === 401) {
             localStorage.removeItem('auth_token');
-            window.location.href = '/';
+            window.location.href = '/login.html';
             return;
         }
         if (!res.ok) {
@@ -210,7 +210,7 @@ window.API = {
             const res = await fetchWithRetry(url, opts);
             if (res.status === 401) {
                 localStorage.removeItem('auth_token');
-                window.location.href = '/';
+                window.location.href = '/login.html';
                 return null;
             }
             if (!res.ok) {
@@ -345,10 +345,8 @@ window.API = {
          * @throws {Error} 请求失败时抛出错误
          */
         toggleAutoConfirm: async function(accountId, enabled) {
-            return await this._request(`${apiBase}/cookies/${accountId}/auto-confirm`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ auto_confirm: enabled })
+            return await this._request(`${apiBase}/cookies/${accountId}/auto-confirm?enabled=${enabled}`, {
+                method: 'PUT'
             });
         }
     },
@@ -1181,7 +1179,7 @@ window.API = {
          * @throws {Error} 请求失败时抛出错误
          */
         logout: async function() {
-            return await this._request('/logout', { method: 'POST' });
+            return await window.API._request('/logout', { method: 'POST' });
         },
 
         /**
@@ -1190,7 +1188,7 @@ window.API = {
          * @throws {Error} 请求失败时抛出错误
          */
         verify: async function() {
-            return await this._request('/verify');
+            return await window.API._request('/verify');
         }
     }
 };

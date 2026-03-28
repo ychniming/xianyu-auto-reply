@@ -143,8 +143,8 @@ class KeywordRepository:
                         self._db._execute_sql(cursor,
                             """INSERT INTO keywords
                                (cookie_id, keyword, reply, item_id, type, image_url,
-                                match_type, priority, reply_mode, replies, trigger_count, conditions)
-                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)""",
+                                match_type, priority, reply_mode, replies, trigger_count, conditions, sequence_index)
+                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 0)""",
                             (cookie_id, keyword, reply, normalized_item_id, kw_type, image_url,
                              match_type, priority, reply_mode, replies, conditions))
                     except sqlite3.IntegrityError as ie:
@@ -279,8 +279,8 @@ class KeywordRepository:
                     try:
                         self._db._execute_sql(cursor,
                             """INSERT INTO keywords
-                               (cookie_id, keyword, reply, item_id, type, match_type, priority, reply_mode, replies, trigger_count, conditions)
-                               VALUES (?, ?, ?, ?, 'text', ?, ?, ?, ?, 0, ?)""",
+                               (cookie_id, keyword, reply, item_id, type, match_type, priority, reply_mode, replies, trigger_count, conditions, sequence_index)
+                               VALUES (?, ?, ?, ?, 'text', ?, ?, ?, ?, 0, ?, 0)""",
                             (cookie_id, keyword, reply, normalized_item_id, match_type, priority, reply_mode, replies, conditions))
                     except sqlite3.IntegrityError as ie:
                         item_desc = f"商品ID: {normalized_item_id}" if normalized_item_id else "通用关键词"
@@ -375,8 +375,8 @@ class KeywordRepository:
 
                 self._db._execute_sql(cursor,
                     """INSERT INTO keywords
-                       (cookie_id, keyword, reply, item_id, type, image_url, match_type, priority, reply_mode, replies, trigger_count, conditions)
-                       VALUES (?, ?, '', ?, 'image', ?, ?, ?, 'single', NULL, 0, ?)""",
+                       (cookie_id, keyword, reply, item_id, type, image_url, match_type, priority, reply_mode, replies, trigger_count, conditions, sequence_index)
+                       VALUES (?, ?, '', ?, 'image', ?, ?, ?, 'single', NULL, 0, ?, 0)""",
                     (cookie_id, keyword, normalized_item_id, image_url, match_type, priority, conditions))
 
                 self.conn.commit()

@@ -1,7 +1,7 @@
 ---
 title: 闲鱼自动回复系统 - 知识库索引
 description: 文档知识库总入口，提供完整的文档导航和快速检索
-lastUpdated: 2026-03-25
+lastUpdated: 2026-03-26
 maintainer: Doc Keeper Agent
 ---
 
@@ -18,6 +18,7 @@ maintainer: Doc Keeper Agent
 | **执行计划** | 功能开发和技术债务 | [plans/active/](./plans/active/) |
 | **参考资料** | API 文档和配置参考 | [reference/api.md](./reference/api.md) |
 | **团队知识** | 原则、规范和文化 | [team/principles.md](./team/principles.md) |
+| **测试指南** | 单元/集成/E2E测试 | [AGENTS.md 测试部分](../AGENTS.md#测试框架) |
 
 ## 文档结构
 

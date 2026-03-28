@@ -40,7 +40,7 @@ def match_reply(cookie_id: str, message: str) -> Optional[str]:
     Returns:
         Optional[str]: 匹配的回复内容，未匹配返回None
     """
-    from src import cookie_manager
+    from app.core import cookie_manager
     mgr = cookie_manager.manager
     if mgr is None:
         return None
@@ -205,7 +205,7 @@ def _register_api_routes(app: FastAPI) -> None:
     async def health_check(request: Request) -> JSONResponse:
         """健康检查端点"""
         try:
-            from src import cookie_manager
+            from app.core import cookie_manager
             manager_status = "ok" if cookie_manager.manager is not None else "error"
 
             from app.repositories import db_manager
@@ -252,7 +252,7 @@ def _register_api_routes(app: FastAPI) -> None:
     async def api_health_check(request: Request) -> JSONResponse:
         """API 健康检查端点"""
         try:
-            from src import cookie_manager
+            from app.core import cookie_manager
             manager_status = "ok" if cookie_manager.manager is not None else "error"
 
             from app.repositories import db_manager
@@ -350,7 +350,7 @@ def _register_api_routes(app: FastAPI) -> None:
         try:
             from app.utils.qr_login import qr_login_manager
             from app.repositories import db_manager
-            from src import cookie_manager
+            from app.core import cookie_manager
 
             if qr_login_manager.is_session_processed(session_id):
                 logger.info(f"会话已处理，跳过：{session_id}")
@@ -435,7 +435,7 @@ def _register_api_routes(app: FastAPI) -> None:
         try:
             from app.utils.qr_login import qr_login_manager
             from app.repositories import db_manager
-            from src import cookie_manager
+            from app.core import cookie_manager
 
             if qr_login_manager.is_session_processed(session_id):
                 logger.info(f"会话已处理，跳过：{session_id}")

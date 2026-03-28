@@ -101,6 +101,14 @@ test_*.py
 *_test.py
 keywords_sample.xlsx
 
+# 测试报告
+reports/
+htmlcov/
+.coverage
+.pytest_cache/
+*.egg-info/
+
+
 # 备份文件
 *.bak
 *.backup

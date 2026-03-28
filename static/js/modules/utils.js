@@ -149,7 +149,7 @@ export async function loadItemsList(accountId, selectElementId, placeholder = '�
     try {
         const response = await fetch(`${apiBase}/items/${accountId}`, {
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${authToken.value}`
             }
         });
 
@@ -180,6 +180,7 @@ export async function loadItemsList(accountId, selectElementId, placeholder = '�
  * App 命名空间 - 核心函数
  * @namespace App
  */
+window.App = window.App || {};
 window.App.showSection = function(sectionName) {
     const DEBUG_MODE = window.DEBUG_MODE || false;
     if (DEBUG_MODE) console.log('切换到页面:', sectionName);

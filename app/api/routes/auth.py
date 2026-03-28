@@ -196,13 +196,26 @@ async def login(request: Request, req: LoginRequest):
 @router.get('/verify')
 @limiter.limit("60/minute")
 async def verify(request: Request, user_info: Optional[Dict[str, Any]] = Depends(get_token_data)):
-    """验证token接口"""
+    """验证 token 接口"""
+    # 添加调试日志
+    import inspect
+    frame = inspect.currentframe()
+    try:
+        logger.debug(f"verify 接口被调用，user_info: {user_info}")
+        # 获取请求头中的 token
+        auth_header = request.headers.get('Authorization', '')
+        logger.debug(f"Authorization header: {auth_header[:20] if auth_header else 'None'}...")
+    finally:
+        del frame
+    
     if user_info:
+        logger.debug(f"验证成功：{user_info.get('username')}")
         return success(data={
             "authenticated": True,
             "user_id": user_info['user_id'],
             "username": user_info['username']
         })
+    logger.debug("验证失败：user_info 为 None")
     return success(data={"authenticated": False})
 
 

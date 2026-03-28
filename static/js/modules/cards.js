@@ -1,12 +1,13 @@
 // 卡券管理模块 - 卡券管理相关函数
 import { apiBase, authToken } from './utils.js';
+import { showToast } from './api.js';
 
 // 加载卡券列表
 export async function loadCards() {
     try {
         const response = await fetch(`${apiBase}/cards`, {
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${authToken.value}`
             }
         });
 
@@ -15,11 +16,11 @@ export async function loadCards() {
             renderCardsList(cards);
             updateCardsStats(cards);
         } else {
-            window.App.showToast('加载卡券列表失败', 'danger');
+            showToast('加载卡券列表失败', 'danger');
         }
     } catch (error) {
         console.error('加载卡券列表失败:', error);
-        window.App.showToast('加载卡券列表失败', 'danger');
+        showToast('加载卡券列表失败', 'danger');
     }
 }
 
@@ -138,26 +139,66 @@ export function updateCardsStats(cards) {
 
 // 显示添加卡券模态框
 export function showAddCardModal() {
-    document.getElementById('addCardForm').reset();
-    toggleCardTypeFields();
-    const modal = new bootstrap.Modal(document.getElementById('addCardModal'));
-    modal.show();
+    // 使用 ModalManager 的方法，它会自动处理模态框的创建和初始化
+    if (window.ModalManager && window.ModalManager.addCardModal) {
+        window.ModalManager.addCardModal.show();
+    } else {
+        // 降级处理：如果 ModalManager 不可用，尝试直接显示
+        const modalEl = document.getElementById('addCardModal');
+        if (modalEl) {
+            const form = document.getElementById('addCardForm');
+            if (form) form.reset();
+            toggleCardTypeFieldsSafe();
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        } else {
+            console.error('addCardModal 未找到且 ModalManager 不可用');
+        }
+    }
+}
+
+// 安全版本的切换卡券类型字段显示（带 null 检查）
+function toggleCardTypeFieldsSafe() {
+    const cardTypeEl = document.getElementById('cardType');
+    if (!cardTypeEl) return;
+    
+    const cardType = cardTypeEl.value;
+    const apiFields = document.getElementById('apiFields');
+    const textFields = document.getElementById('textFields');
+    const dataFields = document.getElementById('dataFields');
+    const imageFields = document.getElementById('imageFields');
+    
+    if (apiFields) apiFields.style.display = cardType === 'api' ? 'block' : 'none';
+    if (textFields) textFields.style.display = cardType === 'text' ? 'block' : 'none';
+    if (dataFields) dataFields.style.display = cardType === 'data' ? 'block' : 'none';
+    if (imageFields) imageFields.style.display = cardType === 'image' ? 'block' : 'none';
 }
 
 // 切换卡券类型字段显示
 export function toggleCardTypeFields() {
-    const cardType = document.getElementById('cardType').value;
+    const cardTypeEl = document.getElementById('cardType');
+    if (!cardTypeEl) return;
+    
+    const cardType = cardTypeEl.value;
 
-    document.getElementById('apiFields').style.display = cardType === 'api' ? 'block' : 'none';
-    document.getElementById('textFields').style.display = cardType === 'text' ? 'block' : 'none';
-    document.getElementById('dataFields').style.display = cardType === 'data' ? 'block' : 'none';
-    document.getElementById('imageFields').style.display = cardType === 'image' ? 'block' : 'none';
+    const apiFields = document.getElementById('apiFields');
+    const textFields = document.getElementById('textFields');
+    const dataFields = document.getElementById('dataFields');
+    const imageFields = document.getElementById('imageFields');
+    
+    if (apiFields) apiFields.style.display = cardType === 'api' ? 'block' : 'none';
+    if (textFields) textFields.style.display = cardType === 'text' ? 'block' : 'none';
+    if (dataFields) dataFields.style.display = cardType === 'data' ? 'block' : 'none';
+    if (imageFields) imageFields.style.display = cardType === 'image' ? 'block' : 'none';
 }
 
 // 切换多规格字段显示
 export function toggleMultiSpecFields() {
-    const isMultiSpec = document.getElementById('isMultiSpec').checked;
-    document.getElementById('multiSpecFields').style.display = isMultiSpec ? 'block' : 'none';
+    const isMultiSpecCheckbox = document.getElementById('isMultiSpec');
+    if (isMultiSpecCheckbox) {
+        const isMultiSpec = isMultiSpecCheckbox.checked;
+        document.getElementById('multiSpecFields').style.display = isMultiSpec ? 'block' : 'none';
+    }
 }
 
 // 初始化卡券图片文件选择器
@@ -168,14 +209,14 @@ export function initCardImageFileSelector() {
             const file = e.target.files[0];
             if (file) {
                 if (!file.type.startsWith('image/')) {
-                    window.App.showToast('❌ 请选择图片文件，当前文件类型：' + file.type, 'warning');
+                    showToast('❌ 请选择图片文件，当前文件类型：' + file.type, 'warning');
                     e.target.value = '';
                     hideCardImagePreview();
                     return;
                 }
 
                 if (file.size > 5 * 1024 * 1024) {
-                    window.App.showToast('❌ 图片文件大小不能超过 5MB，当前文件大小：' + (file.size / 1024 / 1024).toFixed(1) + 'MB', 'warning');
+                    showToast('❌ 图片文件大小不能超过 5MB，当前文件大小：' + (file.size / 1024 / 1024).toFixed(1) + 'MB', 'warning');
                     e.target.value = '';
                     hideCardImagePreview();
                     return;
@@ -205,14 +246,14 @@ export function validateCardImageDimensions(file, inputElement) {
         const totalPixels = width * height;
 
         if (width > maxDimension || height > maxDimension) {
-            window.App.showToast(`❌ 图片尺寸过大：${width}x${height}，最大允许：${maxDimension}x${maxDimension}像素`, 'warning');
+            showToast(`❌ 图片尺寸过大：${width}x${height}，最大允许：${maxDimension}x${maxDimension}像素`, 'warning');
             inputElement.value = '';
             hideCardImagePreview();
             return;
         }
 
         if (totalPixels > maxPixels) {
-            window.App.showToast(`❌ 图片像素总数过大：${(totalPixels / 1024 / 1024).toFixed(1)}M像素，最大允许：8M像素`, 'warning');
+            showToast(`❌ 图片像素总数过大：${(totalPixels / 1024 / 1024).toFixed(1)}M像素，最大允许：8M像素`, 'warning');
             inputElement.value = '';
             hideCardImagePreview();
             return;
@@ -221,15 +262,15 @@ export function validateCardImageDimensions(file, inputElement) {
         showCardImagePreview(file);
 
         if (width > 2048 || height > 2048) {
-            window.App.showToast(`ℹ️ 图片尺寸较大（${width}x${height}），上传时将自动压缩以优化性能`, 'info');
+            showToast(`ℹ️ 图片尺寸较大（${width}x${height}），上传时将自动压缩以优化性能`, 'info');
         } else {
-            window.App.showToast(`✅ 图片尺寸合适（${width}x${height}），可以上传`, 'success');
+            showToast(`✅ 图片尺寸合适（${width}x${height}），可以上传`, 'success');
         }
     };
 
     img.onerror = function() {
         URL.revokeObjectURL(url);
-        window.App.showToast('❌ 无法读取图片文件，请选择有效的图片', 'warning');
+        showToast('❌ 无法读取图片文件，请选择有效的图片', 'warning');
         inputElement.value = '';
         hideCardImagePreview();
     };
@@ -266,14 +307,14 @@ export function initEditCardImageFileSelector() {
             const file = e.target.files[0];
             if (file) {
                 if (!file.type.startsWith('image/')) {
-                    window.App.showToast('❌ 请选择图片文件，当前文件类型：' + file.type, 'warning');
+                    showToast('❌ 请选择图片文件，当前文件类型：' + file.type, 'warning');
                     e.target.value = '';
                     hideEditCardImagePreview();
                     return;
                 }
 
                 if (file.size > 5 * 1024 * 1024) {
-                    window.App.showToast('❌ 图片文件大小不能超过 5MB，当前文件大小：' + (file.size / 1024 / 1024).toFixed(1) + 'MB', 'warning');
+                    showToast('❌ 图片文件大小不能超过 5MB，当前文件大小：' + (file.size / 1024 / 1024).toFixed(1) + 'MB', 'warning');
                     e.target.value = '';
                     hideEditCardImagePreview();
                     return;
@@ -299,7 +340,7 @@ export function validateEditCardImageDimensions(file, inputElement) {
         URL.revokeObjectURL(url);
 
         if (width > 4096 || height > 4096) {
-            window.App.showToast(`❌ 图片尺寸过大（${width}x${height}），最大支持 4096x4096 像素`, 'warning');
+            showToast(`❌ 图片尺寸过大（${width}x${height}），最大支持 4096x4096 像素`, 'warning');
             inputElement.value = '';
             hideEditCardImagePreview();
             return;
@@ -308,15 +349,15 @@ export function validateEditCardImageDimensions(file, inputElement) {
         showEditCardImagePreview(file);
 
         if (width > 2048 || height > 2048) {
-            window.App.showToast(`ℹ️ 图片尺寸较大（${width}x${height}），上传时将自动压缩以优化性能`, 'info');
+            showToast(`ℹ️ 图片尺寸较大（${width}x${height}），上传时将自动压缩以优化性能`, 'info');
         } else {
-            window.App.showToast(`✅ 图片尺寸合适（${width}x${height}），可以上传`, 'success');
+            showToast(`✅ 图片尺寸合适（${width}x${height}），可以上传`, 'success');
         }
     };
 
     img.onerror = function() {
         URL.revokeObjectURL(url);
-        window.App.showToast('❌ 无法读取图片文件，请选择有效的图片', 'warning');
+        showToast('❌ 无法读取图片文件，请选择有效的图片', 'warning');
         inputElement.value = '';
         hideEditCardImagePreview();
     };
@@ -412,7 +453,7 @@ export async function saveCard() {
         const cardName = document.getElementById('cardName').value;
 
         if (!cardType || !cardName) {
-            window.App.showToast('请填写必填字段', 'warning');
+            showToast('请填写必填字段', 'warning');
             return;
         }
 
@@ -421,7 +462,7 @@ export async function saveCard() {
         const specValue = document.getElementById('specValue').value;
 
         if (isMultiSpec && (!specName || !specValue)) {
-            window.App.showToast('多规格卡券必须填写规格名称和规格值', 'warning');
+            showToast('多规格卡券必须填写规格名称和规格值', 'warning');
             return;
         }
 
@@ -448,7 +489,7 @@ export async function saveCard() {
                         headers = headersInput;
                     }
                 } catch (e) {
-                    window.App.showToast('请求头格式错误，请输入有效的JSON', 'warning');
+                    showToast('请求头格式错误，请输入有效的JSON', 'warning');
                     return;
                 }
 
@@ -459,7 +500,7 @@ export async function saveCard() {
                         params = paramsInput;
                     }
                 } catch (e) {
-                    window.App.showToast('请求参数格式错误，请输入有效的JSON', 'warning');
+                    showToast('请求参数格式错误，请输入有效的JSON', 'warning');
                     return;
                 }
 
@@ -480,7 +521,7 @@ export async function saveCard() {
             case 'image':
                 const imageFile = document.getElementById('cardImageFile').files[0];
                 if (!imageFile) {
-                    window.App.showToast('请选择图片文件', 'warning');
+                    showToast('请选择图片文件', 'warning');
                     return;
                 }
 
@@ -490,14 +531,14 @@ export async function saveCard() {
                 const uploadResponse = await fetch(`${apiBase}/upload-image`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${authToken}`
+                        'Authorization': `Bearer ${authToken.value}`
                     },
                     body: formData
                 });
 
                 if (!uploadResponse.ok) {
                     const errorData = await uploadResponse.json();
-                    window.App.showToast(`图片上传失败: ${errorData.detail || '未知错误'}`, 'danger');
+                    showToast(`图片上传失败: ${errorData.detail || '未知错误'}`, 'danger');
                     return;
                 }
 
@@ -509,15 +550,18 @@ export async function saveCard() {
         const response = await fetch(`${apiBase}/cards`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${authToken}`,
+                'Authorization': `Bearer ${authToken.value}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(cardData)
         });
 
         if (response.ok) {
-            window.App.showToast('卡券保存成功', 'success');
-            bootstrap.Modal.getInstance(document.getElementById('addCardModal')).hide();
+            showToast('卡券保存成功', 'success');
+            const modalInstance = bootstrap.Modal.getInstance(document.getElementById('addCardModal'));
+            if (modalInstance) {
+                modalInstance.hide();
+            }
             clearAddCardForm();
             loadCards();
         } else {
@@ -533,11 +577,11 @@ export async function saveCard() {
                     errorMessage = `HTTP ${response.status}: ${response.statusText}`;
                 }
             }
-            window.App.showToast(`保存失败: ${errorMessage}`, 'danger');
+            showToast(`保存失败: ${errorMessage}`, 'danger');
         }
     } catch (error) {
         console.error('保存卡券失败:', error);
-        window.App.showToast(`网络错误: ${error.message}`, 'danger');
+        showToast(`网络错误: ${error.message}`, 'danger');
     }
 }
 
@@ -546,7 +590,7 @@ export async function editCard(cardId) {
     try {
         const response = await fetch(`${apiBase}/cards/${cardId}`, {
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${authToken.value}`
             }
         });
 
@@ -602,11 +646,11 @@ export async function editCard(cardId) {
             const modal = new bootstrap.Modal(document.getElementById('editCardModal'));
             modal.show();
         } else {
-            window.App.showToast('获取卡券详情失败', 'danger');
+            showToast('获取卡券详情失败', 'danger');
         }
     } catch (error) {
         console.error('获取卡券详情失败:', error);
-        window.App.showToast('获取卡券详情失败', 'danger');
+        showToast('获取卡券详情失败', 'danger');
     }
 }
 
@@ -628,7 +672,7 @@ export async function updateCard() {
         const cardName = document.getElementById('editCardName').value;
 
         if (!cardType || !cardName) {
-            window.App.showToast('请填写必填字段', 'warning');
+            showToast('请填写必填字段', 'warning');
             return;
         }
 
@@ -637,7 +681,7 @@ export async function updateCard() {
         const specValue = document.getElementById('editSpecValue').value;
 
         if (isMultiSpec && (!specName || !specValue)) {
-            window.App.showToast('多规格卡券必须填写规格名称和规格值', 'warning');
+            showToast('多规格卡券必须填写规格名称和规格值', 'warning');
             return;
         }
 
@@ -664,7 +708,7 @@ export async function updateCard() {
                         headers = headersInput;
                     }
                 } catch (e) {
-                    window.App.showToast('请求头格式错误，请输入有效的JSON', 'warning');
+                    showToast('请求头格式错误，请输入有效的JSON', 'warning');
                     return;
                 }
 
@@ -675,7 +719,7 @@ export async function updateCard() {
                         params = paramsInput;
                     }
                 } catch (e) {
-                    window.App.showToast('请求参数格式错误，请输入有效的JSON', 'warning');
+                    showToast('请求参数格式错误，请输入有效的JSON', 'warning');
                     return;
                 }
 
@@ -705,23 +749,26 @@ export async function updateCard() {
         const response = await fetch(`${apiBase}/cards/${cardId}`, {
             method: 'PUT',
             headers: {
-                'Authorization': `Bearer ${authToken}`,
+                'Authorization': `Bearer ${authToken.value}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(cardData)
         });
 
         if (response.ok) {
-            window.App.showToast('卡券更新成功', 'success');
-            bootstrap.Modal.getInstance(document.getElementById('editCardModal')).hide();
+            showToast('卡券更新成功', 'success');
+            const modalInstance = bootstrap.Modal.getInstance(document.getElementById('editCardModal'));
+            if (modalInstance) {
+                modalInstance.hide();
+            }
             loadCards();
         } else {
             const error = await response.text();
-            window.App.showToast(`更新失败: ${error}`, 'danger');
+            showToast(`更新失败：${error}`, 'danger');
         }
     } catch (error) {
         console.error('更新卡券失败:', error);
-        window.App.showToast('更新卡券失败', 'danger');
+        showToast('更新卡券失败', 'danger');
     }
 }
 
@@ -744,28 +791,31 @@ export async function updateCardWithImage(cardId, cardData, imageFile) {
         const response = await fetch(`${apiBase}/cards/${cardId}/image`, {
             method: 'PUT',
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${authToken.value}`
             },
             body: formData
         });
 
         if (response.ok) {
-            window.App.showToast('卡券更新成功', 'success');
-            bootstrap.Modal.getInstance(document.getElementById('editCardModal')).hide();
+            showToast('卡券更新成功', 'success');
+            const modalInstance = bootstrap.Modal.getInstance(document.getElementById('editCardModal'));
+            if (modalInstance) {
+                modalInstance.hide();
+            }
             loadCards();
         } else {
             const error = await response.text();
-            window.App.showToast(`更新失败: ${error}`, 'danger');
+            showToast(`更新失败：${error}`, 'danger');
         }
     } catch (error) {
         console.error('更新带图片的卡券失败:', error);
-        window.App.showToast('更新卡券失败', 'danger');
+        showToast('更新卡券失败', 'danger');
     }
 }
 
 // 测试卡券
 export function testCard(cardId) {
-    window.App.showToast('测试功能开发中...', 'info');
+    showToast('测试功能开发中...', 'info');
 }
 
 // 删除卡券
@@ -775,20 +825,20 @@ export async function deleteCard(cardId) {
             const response = await fetch(`${apiBase}/cards/${cardId}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${authToken}`
+                    'Authorization': `Bearer ${authToken.value}`
                 }
             });
 
             if (response.ok) {
-                window.App.showToast('卡券删除成功', 'success');
+                showToast('卡券删除成功', 'success');
                 loadCards();
             } else {
                 const error = await response.text();
-                window.App.showToast(`删除失败: ${error}`, 'danger');
+                showToast(`删除失败: ${error}`, 'danger');
             }
         } catch (error) {
             console.error('删除卡券失败:', error);
-            window.App.showToast('删除卡券失败', 'danger');
+            showToast('删除卡券失败', 'danger');
         }
     }
 }
@@ -800,7 +850,7 @@ export async function loadDeliveryRules() {
     try {
         const response = await fetch(`${apiBase}/delivery-rules`, {
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${authToken.value}`
             }
         });
 
@@ -812,11 +862,11 @@ export async function loadDeliveryRules() {
             // 同时加载卡券列表用于下拉选择
             loadCardsForSelect();
         } else {
-            window.App.showToast('加载发货规则失败', 'danger');
+            showToast('加载发货规则失败', 'danger');
         }
     } catch (error) {
         console.error('加载发货规则失败:', error);
-        window.App.showToast('加载发货规则失败', 'danger');
+        showToast('加载发货规则失败', 'danger');
     }
 }
 
@@ -932,7 +982,7 @@ export async function loadCardsForSelect() {
     try {
         const response = await fetch(`${apiBase}/cards`, {
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${authToken.value}`
             }
         });
 
@@ -996,7 +1046,7 @@ export async function saveDeliveryRule() {
         const description = document.getElementById('ruleDescription').value;
 
         if (!keyword || !cardId) {
-            window.App.showToast('请填写必填字段', 'warning');
+            showToast('请填写必填字段', 'warning');
             return;
         }
 
@@ -1011,23 +1061,26 @@ export async function saveDeliveryRule() {
         const response = await fetch(`${apiBase}/delivery-rules`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${authToken}`,
+                'Authorization': `Bearer ${authToken.value}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(ruleData)
         });
 
         if (response.ok) {
-            window.App.showToast('发货规则保存成功', 'success');
-            bootstrap.Modal.getInstance(document.getElementById('addDeliveryRuleModal')).hide();
+            showToast('发货规则保存成功', 'success');
+            const modalInstance = bootstrap.Modal.getInstance(document.getElementById('addDeliveryRuleModal'));
+            if (modalInstance) {
+                modalInstance.hide();
+            }
             loadDeliveryRules();
         } else {
             const error = await response.text();
-            window.App.showToast(`保存失败: ${error}`, 'danger');
+            showToast(`保存失败: ${error}`, 'danger');
         }
     } catch (error) {
         console.error('保存发货规则失败:', error);
-        window.App.showToast('保存发货规则失败', 'danger');
+        showToast('保存发货规则失败', 'danger');
     }
 }
 
@@ -1037,7 +1090,7 @@ export async function editDeliveryRule(ruleId) {
         // 获取发货规则详情
         const response = await fetch(`${apiBase}/delivery-rules/${ruleId}`, {
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${authToken.value}`
             }
         });
 
@@ -1059,11 +1112,11 @@ export async function editDeliveryRule(ruleId) {
             const modal = new bootstrap.Modal(document.getElementById('editDeliveryRuleModal'));
             modal.show();
         } else {
-            window.App.showToast('获取发货规则详情失败', 'danger');
+            showToast('获取发货规则详情失败', 'danger');
         }
     } catch (error) {
         console.error('获取发货规则详情失败:', error);
-        window.App.showToast('获取发货规则详情失败', 'danger');
+        showToast('获取发货规则详情失败', 'danger');
     }
 }
 
@@ -1072,11 +1125,12 @@ export async function loadCardsForEditSelect() {
     try {
         const response = await fetch(`${apiBase}/cards`, {
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${authToken.value}`
             }
         });
 
         if (response.ok) {
+
             const cards = await response.json();
             const select = document.getElementById('editSelectedCard');
 
@@ -1137,7 +1191,7 @@ export async function updateDeliveryRule() {
         const description = document.getElementById('editRuleDescription').value;
 
         if (!keyword || !cardId) {
-            window.App.showToast('请填写必填字段', 'warning');
+            showToast('请填写必填字段', 'warning');
             return;
         }
 
@@ -1152,29 +1206,32 @@ export async function updateDeliveryRule() {
         const response = await fetch(`${apiBase}/delivery-rules/${ruleId}`, {
             method: 'PUT',
             headers: {
-                'Authorization': `Bearer ${authToken}`,
+                'Authorization': `Bearer ${authToken.value}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(ruleData)
         });
 
         if (response.ok) {
-            window.App.showToast('发货规则更新成功', 'success');
-            bootstrap.Modal.getInstance(document.getElementById('editDeliveryRuleModal')).hide();
+            showToast('发货规则更新成功', 'success');
+            const modalInstance = bootstrap.Modal.getInstance(document.getElementById('editDeliveryRuleModal'));
+            if (modalInstance) {
+                modalInstance.hide();
+            }
             loadDeliveryRules();
         } else {
             const error = await response.text();
-            window.App.showToast(`更新失败: ${error}`, 'danger');
+            showToast(`更新失败: ${error}`, 'danger');
         }
     } catch (error) {
         console.error('更新发货规则失败:', error);
-        window.App.showToast('更新发货规则失败', 'danger');
+        showToast('更新发货规则失败', 'danger');
     }
 }
 
 // 测试发货规则
 export function testDeliveryRule(ruleId) {
-    window.App.showToast('测试功能开发中...', 'info');
+    showToast('测试功能开发中...', 'info');
 }
 
 // 删除发货规则
@@ -1184,22 +1241,43 @@ export async function deleteDeliveryRule(ruleId) {
             const response = await fetch(`${apiBase}/delivery-rules/${ruleId}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${authToken}`
+                    'Authorization': `Bearer ${authToken.value}`
                 }
             });
 
             if (response.ok) {
-                window.App.showToast('发货规则删除成功', 'success');
+                showToast('发货规则删除成功', 'success');
                 loadDeliveryRules();
             } else {
                 const error = await response.text();
-                window.App.showToast(`删除失败: ${error}`, 'danger');
+                showToast(`删除失败: ${error}`, 'danger');
             }
         } catch (error) {
             console.error('删除发货规则失败:', error);
-            window.App.showToast('删除发货规则失败', 'danger');
+            showToast('删除发货规则失败', 'danger');
         }
     }
+}
+
+// ============================================================================
+// 全局函数导出（用于 HTML onclick 属性调用）
+// ============================================================================
+if (typeof window !== 'undefined') {
+    // 卡券管理函数
+    window.saveCard = saveCard;
+    window.editCard = editCard;
+    window.deleteCard = deleteCard;
+    window.testCard = testCard;
+    window.showAddCardModal = showAddCardModal;
+    window.toggleCardTypeFields = toggleCardTypeFields;
+    window.toggleMultiSpecFields = toggleMultiSpecFields;
+    
+    // 发货规则函数
+    window.saveDeliveryRule = saveDeliveryRule;
+    window.updateDeliveryRule = updateDeliveryRule;
+    window.editDeliveryRule = editDeliveryRule;
+    window.deleteDeliveryRule = deleteDeliveryRule;
+    window.testDeliveryRule = testDeliveryRule;
 }
 
 

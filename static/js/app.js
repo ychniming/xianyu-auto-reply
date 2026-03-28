@@ -42,16 +42,31 @@ window.toggleSidebar = toggleSidebar;
 // ========== 初始化 ==========
 document.addEventListener('DOMContentLoaded', async function() {
     // 检查认证 - authToken 是一个带 getter 的对象，需要调用 .value 获取实际值
+    // 等待一小段时间确保 localStorage 已经持久化（特别是刚从登录页重定向过来时）
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     if (!Utils.authToken.value) {
+        console.log('未检测到 token，重定向到登录页');
         window.location.href = '/login.html';
         return;
     }
 
+    console.log('Token 检测通过，开始验证用户身份');
+
     // 验证用户身份并显示管理员菜单
     try {
-        await Auth.checkAuth();
+        const authResult = await Auth.checkAuth();
+        if (!authResult) {
+            console.error('身份验证失败，保留 token 并重定向到登录页');
+            localStorage.removeItem('auth_token');
+            window.location.href = '/login.html';
+            return;
+        }
     } catch (error) {
         console.error('验证身份失败:', error);
+        localStorage.removeItem('auth_token');
+        window.location.href = '/login.html';
+        return;
     }
 
     // 菜单点击事件

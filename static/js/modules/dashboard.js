@@ -1,5 +1,6 @@
 // 仪表盘模块 - 仪表盘和日志相关函数
 import { apiBase, authToken, dashboardStore, clearKeywordCache, escapeHtml } from './utils.js';
+import { toggleLoading } from './api.js';
 
 // 加载仪表盘数据
 export async function loadDashboard() {
@@ -157,6 +158,9 @@ export async function refreshLogs() {
         showToast('刷新日志失败', 'danger');
     }
 }
+
+// 导出 toggleLoading 供其他模块使用
+export { toggleLoading } from './api.js';
 
 // 显示日志
 export function displayLogs() {

@@ -40,6 +40,18 @@ openai>=1.65.5
 Pillow>=10.0.0
 qrcode[pil]>=7.4.2
 
+# ==================== 测试框架 ====================
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+pytest-xdist>=3.5.0
+pytest-cov>=4.1.0
+pytest-html>=4.1.0
+pytest-timeout>=2.2.0
+pytest-mock>=3.12.0
+
+# ==================== Allure报告 ====================
+allure-pytest>=2.13.0
+
 # ==================== 浏览器自动化 ====================
 playwright>=1.40.0
 

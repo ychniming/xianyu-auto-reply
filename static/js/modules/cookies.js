@@ -1,11 +1,12 @@
-// Cookie管理模块 - 账号/Cookie相关函数
+// Cookie 管理模块 - 账号/Cookie 相关函数
 import { clearKeywordCache } from './utils.js';
 import { refreshAccountList, loadAccountKeywords, updateAccountBadge } from './keywords.js';
+import { toggleLoading, showToast } from './api.js';
 
-// 加载Cookie列表
+// 加载 Cookie 列表
 export async function loadCookies() {
     try {
-        window.App.toggleLoading(true);
+        toggleLoading(true);
         const tbody = document.querySelector('#cookieTable tbody');
         tbody.innerHTML = '';
 
@@ -22,7 +23,7 @@ export async function loadCookies() {
         setupCookieClickHandlers();
     } catch (err) {
     } finally {
-        window.App.toggleLoading(false);
+        toggleLoading(false);
     }
 }
 
@@ -78,7 +79,7 @@ async function getAIReplySettings(cookieId) {
     try {
         return await window.API.ai.getSettings(cookieId) || { ai_enabled: false, model_name: 'qwen-plus' };
     } catch (e) {
-        console.warn(`获取账号 ${cookieId} AI回复设置失败:`, e);
+        console.warn(`获取账号 ${cookieId} AI 回复设置失败:`, e);
         return { ai_enabled: false, model_name: 'qwen-plus' };
     }
 }
@@ -102,8 +103,8 @@ function createCookieRow(cookie, isEnabled) {
         '<span class="badge bg-secondary">禁用</span>';
 
     const aiReplyBadge = cookie.aiReply.ai_enabled ?
-        '<span class="badge bg-primary">AI启用</span>' :
-        '<span class="badge bg-secondary">AI禁用</span>';
+        '<span class="badge bg-primary">AI 启用</span>' :
+        '<span class="badge bg-secondary">AI 禁用</span>';
 
     const autoConfirm = cookie.auto_confirm === undefined ? true : cookie.auto_confirm;
 
@@ -114,7 +115,7 @@ function createCookieRow(cookie, isEnabled) {
         </div>
     </td>
     <td class="align-middle">
-        <div class="cookie-value" title="点击复制Cookie" style="font-family: monospace; font-size: 0.875rem; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;">
+        <div class="cookie-value" title="点击复制 Cookie" style="font-family: monospace; font-size: 0.875rem; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;">
         </div>
     </td>
     <td class="align-middle">
@@ -151,16 +152,16 @@ function createCookieRow(cookie, isEnabled) {
     </td>
     <td class="align-middle">
         <div class="btn-group" role="group">
-        <button class="btn btn-sm btn-outline-primary" onclick="editCookieInline('${cookie.id}', '${cookie.value}')" title="修改Cookie" ${!isEnabled ? 'disabled' : ''}>
+        <button class="btn btn-sm btn-outline-primary" onclick="editCookieInline('${cookie.id}', '${cookie.value}')" title="修改 Cookie" ${!isEnabled ? 'disabled' : ''}>
             <i class="bi bi-pencil"></i>
         </button>
         <button class="btn btn-sm btn-outline-success" onclick="goToAutoReply('${cookie.id}')" title="${isEnabled ? '设置自动回复' : '配置关键词 (账号已禁用)'}">
             <i class="bi bi-arrow-right-circle"></i>
         </button>
-        <button class="btn btn-sm btn-outline-warning" onclick="configAIReply('${cookie.id}')" title="配置AI回复" ${!isEnabled ? 'disabled' : ''}>
+        <button class="btn btn-sm btn-outline-warning" onclick="configAIReply('${cookie.id}')" title="配置 AI 回复" ${!isEnabled ? 'disabled' : ''}>
             <i class="bi bi-robot"></i>
         </button>
-        <button class="btn btn-sm btn-outline-info" onclick="copyCookie('${cookie.id}', '${cookie.value}')" title="复制Cookie">
+        <button class="btn btn-sm btn-outline-info" onclick="copyCookie('${cookie.id}', '${cookie.value}')" title="复制 Cookie">
             <i class="bi bi-clipboard"></i>
         </button>
         <button class="btn btn-sm btn-outline-danger" onclick="delCookie('${cookie.id}')" title="删除账号">
@@ -188,24 +189,24 @@ function setupCookieClickHandlers() {
             const cookieValue = element.textContent;
             if (cookieValue && cookieValue !== '未设置') {
                 navigator.clipboard.writeText(cookieValue).then(() => {
-                    window.App.showToast('Cookie已复制到剪贴板', 'success');
+                    showToast('Cookie 已复制到剪贴板', 'success');
                 }).catch(() => {
-                    window.App.showToast('复制失败，请手动复制', 'error');
+                    showToast('复制失败，请手动复制', 'error');
                 });
             }
         }
     });
 }
 
-// 复制Cookie
+// 复制 Cookie
 export function copyCookie(id, value) {
     if (!value || value === '未设置') {
-    window.App.showToast('该账号暂无Cookie值', 'warning');
+    showToast('该账号暂无 Cookie 值', 'warning');
     return;
     }
 
     navigator.clipboard.writeText(value).then(() => {
-    window.App.showToast(`账号 "${id}" 的Cookie已复制到剪贴板`, 'success');
+    showToast(`账号 "${id}" 的 Cookie 已复制到剪贴板`, 'success');
     }).catch(() => {
     // 降级方案：创建临时文本框
     const textArea = document.createElement('textarea');
@@ -214,34 +215,34 @@ export function copyCookie(id, value) {
     textArea.select();
     try {
         document.execCommand('copy');
-        window.App.showToast(`账号 "${id}" 的Cookie已复制到剪贴板`, 'success');
+        showToast(`账号 "${id}" 的 Cookie 已复制到剪贴板`, 'success');
     } catch (err) {
-        window.App.showToast('复制失败，请手动复制', 'error');
+        showToast('复制失败，请手动复制', 'error');
     }
     document.body.removeChild(textArea);
     });
 }
 
-// 删除Cookie
+// 删除 Cookie
 export async function delCookie(id) {
     if (!confirm(`确定要删除账号 "${id}" 吗？此操作不可恢复。`)) return;
 
     try {
         await window.API.cookies.delete(id);
-        window.App.showToast(`账号 "${id}" 已删除`, 'success');
+        showToast(`账号 "${id}" 已删除`, 'success');
         loadCookies();
     } catch (err) {
-        // 错误已在fetchJSON中处理
+        // 错误已在 fetchJSON 中处理
     }
 }
 
-// 内联编辑Cookie
+// 内联编辑 Cookie
 export function editCookieInline(id, currentValue) {
     const row = event.target.closest('tr');
     const cookieValueCell = row.querySelector('.cookie-value');
     const originalContent = cookieValueCell.innerHTML;
 
-    // 存储原始数据到全局变量，避免HTML注入问题
+    // 存储原始数据到全局变量，避免 HTML 注入问题
     window.editingCookieData = {
     id: id,
     originalContent: originalContent,
@@ -258,7 +259,7 @@ export function editCookieInline(id, currentValue) {
     input.className = 'form-control form-control-sm';
     input.id = `edit-${id}`;
     input.value = currentValue || '';
-    input.placeholder = '输入新的Cookie值';
+    input.placeholder = '输入新的 Cookie 值';
 
     // 创建保存按钮
     const saveBtn = document.createElement('button');
@@ -303,38 +304,38 @@ export function editCookieInline(id, currentValue) {
     actionButtons.forEach(btn => btn.disabled = true);
 }
 
-// 保存内联编辑的Cookie
+// 保存内联编辑的 Cookie
 export async function saveCookieInline(id) {
     const input = document.getElementById(`edit-${id}`);
     const newValue = input.value.trim();
 
     if (!newValue) {
-    window.App.showToast('Cookie值不能为空', 'warning');
+    showToast('Cookie 值不能为空', 'warning');
     return;
     }
 
     try {
-    window.App.toggleLoading(true);
+    toggleLoading(true);
 
     await window.API.cookies.update(id, {
         id: id,
         value: newValue
     });
 
-    window.App.showToast(`账号 "${id}" Cookie已更新`, 'success');
+    showToast(`账号 "${id}" Cookie 已更新`, 'success');
     loadCookies(); // 重新加载列表
 
     } catch (err) {
-    console.error('Cookie更新失败:', err);
-    window.App.showToast(`Cookie更新失败: ${err.message || '未知错误'}`, 'danger');
+    console.error('Cookie 更新失败:', err);
+    showToast(`Cookie 更新失败：${err.message || '未知错误'}`, 'danger');
     // 恢复原内容
     cancelCookieEdit(id);
     } finally {
-    window.App.toggleLoading(false);
+    toggleLoading(false);
     }
 }
 
-// 取消Cookie编辑
+// 取消 Cookie 编辑
 export function cancelCookieEdit(id) {
     if (!window.editingCookieData || window.editingCookieData.id !== id) {
     console.error('编辑数据不存在');
@@ -358,14 +359,14 @@ export function cancelCookieEdit(id) {
 // 切换账号启用/禁用状态
 export async function toggleAccountStatus(accountId, enabled) {
     try {
-        window.App.toggleLoading(true);
+        toggleLoading(true);
 
-        // 这里需要调用后端API来更新账号状态
-        // 由于当前后端可能没有enabled字段，我们先在前端模拟
+        // 这里需要调用后端 API 来更新账号状态
+        // 由于当前后端可能没有 enabled 字段，我们先在前端模拟
         // 实际项目中需要后端支持
 
         await window.API.cookies.toggleStatus(accountId, enabled);
-        window.App.showToast(`账号 "${accountId}" 已${enabled ? '启用' : '禁用'}`, 'success');
+        showToast(`账号 "${accountId}" 已${enabled ? '启用' : '禁用'}`, 'success');
 
         // 清除相关缓存，确保数据一致性
         clearKeywordCache();
@@ -381,17 +382,17 @@ export async function toggleAccountStatus(accountId, enabled) {
         if (accountSelect && accountSelect.value === accountId) {
             if (!enabled) {
                 updateAccountBadge(accountId, false);
-                window.App.showToast('账号已禁用，配置的关键词不会参与自动回复', 'warning');
+                showToast('账号已禁用，配置的关键词不会参与自动回复', 'warning');
             } else {
                 updateAccountBadge(accountId, true);
-                window.App.showToast('账号已启用，配置的关键词将参与自动回复', 'success');
+                showToast('账号已启用，配置的关键词将参与自动回复', 'success');
             }
         }
 
     } catch (error) {
         // 如果后端不支持，先在前端模拟
         console.warn('切换账号状态失败，使用前端模拟:', error);
-        window.App.showToast(`账号 "${accountId}" 已${enabled ? '启用' : '禁用'} (本地模拟)`, enabled ? 'success' : 'warning');
+        showToast(`账号 "${accountId}" 已${enabled ? '启用' : '禁用'} (本地模拟)`, enabled ? 'success' : 'warning');
         updateAccountRowStatus(accountId, enabled);
 
         // 恢复切换按钮状态
@@ -400,7 +401,7 @@ export async function toggleAccountStatus(accountId, enabled) {
             toggle.checked = enabled;
         }
     } finally {
-        window.App.toggleLoading(false);
+        toggleLoading(false);
     }
 }
 
@@ -423,7 +424,7 @@ export function updateAccountRowStatus(accountId, enabled) {
     <i class="bi bi-${enabled ? 'check-circle-fill' : 'x-circle-fill'}"></i>
     `;
 
-    // 更新按钮状态（只禁用编辑Cookie按钮，其他按钮保持可用）
+    // 更新按钮状态（只禁用编辑 Cookie 按钮，其他按钮保持可用）
     actionButtons.forEach(btn => {
     if (btn.onclick && btn.onclick.toString().includes('editCookieInline')) {
         btn.disabled = !enabled;
@@ -442,17 +443,17 @@ export function updateAccountRowStatus(accountId, enabled) {
 // 切换自动确认发货状态
 export async function toggleAutoConfirm(accountId, enabled) {
     try {
-        window.App.toggleLoading(true);
+        toggleLoading(true);
 
         const result = await window.API.cookies.toggleAutoConfirm(accountId, enabled);
-        window.App.showToast(result.message || `账号 "${accountId}" 自动确认发货已${enabled ? '开启' : '关闭'}`, 'success');
+        showToast(result.message || `账号 "${accountId}" 自动确认发货已${enabled ? '开启' : '关闭'}`, 'success');
 
         // 更新界面显示
         updateAutoConfirmRowStatus(accountId, enabled);
 
     } catch (error) {
         console.error('切换自动确认发货状态失败:', error);
-        window.App.showToast('更新自动确认发货设置失败', 'error');
+        showToast('更新自动确认发货设置失败', 'error');
 
         // 恢复切换按钮状态
         const toggle = document.querySelector(`input[onchange*="toggleAutoConfirm('${accountId}'"]`);
@@ -460,7 +461,7 @@ export async function toggleAutoConfirm(accountId, enabled) {
             toggle.checked = !enabled;
         }
     } finally {
-        window.App.toggleLoading(false);
+        toggleLoading(false);
     }
 }
 
@@ -496,11 +497,10 @@ export function goToAutoReply(accountId) {
     const accountSelect = document.getElementById('accountSelect');
     if (accountSelect) {
         accountSelect.value = accountId;
-        // 触发change事件来加载关键词
+        // 触发 change 事件来加载关键词
         loadAccountKeywords();
     }
     }, 100);
 
-    window.App.showToast(`已切换到自动回复页面，账号 "${accountId}" 已选中`, 'info');
+    showToast(`已切换到自动回复页面，账号 "${accountId}" 已选中`, 'info');
 }
-

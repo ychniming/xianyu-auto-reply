@@ -12,6 +12,7 @@ import os
 import sys
 import asyncio
 import threading
+import time
 import uvicorn
 from urllib.parse import urlparse
 from pathlib import Path
@@ -163,11 +164,11 @@ def main():
     
     # 初始化文件日志收集器
     try:
-        from scripts.file_log_collector import setup_loguru_file_output
-        setup_loguru_file_output()
+        from scripts.file_log_collector import setup_file_logging
+        setup_file_logging()
         logger.info("文件日志收集器已启动，开始收集实时日志")
     except ImportError as e:
-        logger.warning(f"文件日志收集器导入失败: {e}")
+        logger.warning(f"文件日志收集器导入失败：{e}")
 
     # 创建CookieManager
     cookie_manager = _create_cookie_manager()
@@ -189,7 +190,7 @@ def main():
     # 保持主线程运行
     try:
         while True:
-            asyncio.sleep(3600)  # 每小时检查一次
+            time.sleep(3600)  # 每小时检查一次
     except KeyboardInterrupt:
         logger.info("收到中断信号，正在关闭...")
 
